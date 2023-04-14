@@ -48,6 +48,7 @@ def openai_post_insta():
     ai_response = result.choices[0].message.content
     print(ai_response)
 
+    # generate image by openai
     response = openai.Image.create(
         prompt=ai_response,
         n=1,
@@ -55,7 +56,8 @@ def openai_post_insta():
         response_format="b64_json",
     )
 
-    image_path = f"image_{BUSINESS_ACCOUNT_ID}.png"
+    # save image as file
+    image_path = f"/tmp/image_{BUSINESS_ACCOUNT_ID}.png"
     for data, n in zip(response["data"], range(1)):
         img_data = base64.b64decode(data["b64_json"])
         with open(image_path, "wb") as f:
@@ -68,7 +70,7 @@ def openai_post_insta():
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
     print(image_url)
 
-    caption = f"{ai_response} #chatgpt #openai #api"
+    caption = f"This is image of {ai_response} created by image generation OpenAI API #chatgpt #openai #api"
 
     # Upload the image to Facebook
     url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
