@@ -3,6 +3,7 @@ import os
 import openai
 import base64
 import random
+import time
 
 from flask import Flask
 from google.cloud import storage
@@ -21,7 +22,13 @@ topic = [
    "musician or group or band",
    "movie",
    "drama",
-   "place"
+   "place",
+   "politician",
+   "athlete",
+   "comedian",
+   "actor",
+   "actress",
+   "city"
 ]
 
 @app.route('/openai_post_insta', methods=['GET'])
@@ -54,7 +61,10 @@ def openai_post_insta():
         with open(image_path, "wb") as f:
             f.write(img_data)
 
-    image_url = upload_to_bucket("image_path", image_path, "ai-bot-app-insta")
+    current_time = int(time.time())
+    current_time_string = str(current_time)
+
+    image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
 
     # Upload the image to Facebook
     url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
