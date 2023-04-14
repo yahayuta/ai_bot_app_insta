@@ -64,11 +64,15 @@ def openai_post_insta():
     current_time = int(time.time())
     current_time_string = str(current_time)
 
+    # Uploads a file to the Google Cloud Storage bucket
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
+    print(image_url)
+
+    caption = f"{ai_response} #chatgpt #openai #api"
 
     # Upload the image to Facebook
     url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
-    params = {'access_token': PAGE_ACCESS_TOKEN, 'image_url':image_url, 'caption':ai_response}
+    params = {'access_token': PAGE_ACCESS_TOKEN, 'image_url':image_url, 'caption':caption}
     response = requests.post(url, params=params)
     if response.status_code != 200:
         raise Exception(f"Failed to upload image: {response.text}")
@@ -82,6 +86,12 @@ def openai_post_insta():
         raise Exception(f"Failed to publish photo: {response.text}")
 
     print('Image uploaded and published successfully!')
+
+    if os.path.exists(image_path): # check if the file exists
+        os.remove(image_path) # delete the file
+        print(f"{image_path} has been deleted.")
+    else:
+        print(f"{image_path} does not exist.")
 
     return "ok", 200
 
