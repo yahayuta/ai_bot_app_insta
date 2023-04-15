@@ -70,7 +70,7 @@ def openai_post_insta():
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
     print(image_url)
 
-    caption = f"This is image of {ai_response} created by image generation OpenAI API #chatgpt #openai #api"
+    caption = f"This is an image of {ai_response} created by image generation OpenAI API #chatgpt #openai #api"
 
     # Upload the image to Facebook
     url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
