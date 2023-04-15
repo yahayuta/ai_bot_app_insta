@@ -19,16 +19,16 @@ openai.api_key = os.environ.get('OPENAI_TOKEN', '')
 AI_ENGINE = 'gpt-3.5-turbo'
 
 topic = [
-   "musician or group or band",
-   "movie",
-   "drama",
-   "place",
-   "politician",
-   "athlete",
-   "comedian",
-   "actor",
-   "actress",
-   "city"
+   "city",
+   "World Heritage",
+   "sightseeing place",
+   "animal",
+   "airport",
+   "train station",
+   "sea port",
+   "bridge",
+   "zoo",
+   "theme park"
 ]
 
 @app.route('/openai_post_insta', methods=['GET'])
@@ -39,7 +39,7 @@ def openai_post_insta():
 
     # make openai parameter
     input = []
-    text = f'pick one famous {picked_topic} all over the world.'
+    text = f'pick one {picked_topic} all over the world.'
     new_message = {"role":"user", "content":text}
     input.append(new_message)
 
