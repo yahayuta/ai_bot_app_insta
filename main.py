@@ -20,7 +20,7 @@ AI_ENGINE = 'gpt-3.5-turbo'
 
 topic = [
    "city",
-   "World Heritage",
+   "world heritage",
    "sightseeing place",
    "animal",
    "airport",
@@ -28,7 +28,8 @@ topic = [
    "sea port",
    "bridge",
    "zoo",
-   "theme park"
+   "theme park",
+   "cartoon"
 ]
 
 @app.route('/openai_post_insta', methods=['GET'])
@@ -70,7 +71,7 @@ def openai_post_insta():
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
     print(image_url)
 
-    caption = f"This is an image of {ai_response} created by image generation OpenAI API #chatgpt #openai #api"
+    caption = f"This is an image of {ai_response} created by image generation OpenAI API #chatgpt #openai #dalle #dalle2 #api"
 
     # Upload the image to Facebook
     url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
