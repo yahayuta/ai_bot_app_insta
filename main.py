@@ -22,14 +22,13 @@ topic = [
    "city",
    "world heritage",
    "sightseeing place",
-   "animal",
    "airport",
    "train station",
    "sea port",
    "bridge",
    "zoo",
-   "theme park",
-   "cartoon"
+   "aquarium",
+   "theme park"
 ]
 
 @app.route('/openai_post_insta', methods=['GET'])
