@@ -39,7 +39,8 @@ def openai_post_insta():
 
     # make openai parameter
     input = []
-    text = f'pick one {picked_topic} all over the world.'
+    # text = f'pick one {picked_topic} all over the world.'
+    text = 'a place all over the world'
     new_message = {"role":"user", "content":text}
     input.append(new_message)
 
