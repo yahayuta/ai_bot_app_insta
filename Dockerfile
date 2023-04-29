@@ -32,6 +32,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install requests
 RUN pip install openai
 RUN pip install google-cloud-storage
+RUN pip install stability-sdk
 
 # Run the web service on container startup. Here we use the gunicorn
 # webserver, with one worker process and 8 threads.
