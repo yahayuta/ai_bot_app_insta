@@ -75,7 +75,7 @@ def stability_post_insta():
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
     print(image_url)
 
-    caption = f"This is an image of {ai_response} created by image generation Stable Diffusion API #stablediffusion #stabilitysdk #api"
+    caption = f"This is an image of {ai_response} created by image generation Stable Diffusion API #stablediffusion #texttoimage #api"
 
     # Upload the image to Facebook
     url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
@@ -142,7 +142,7 @@ def openai_post_insta():
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
     print(image_url)
 
-    caption = f"This is an image of {ai_response} created by image generation OpenAI API #chatgpt #openai #dalle #dalle2 #api"
+    caption = f"This is an image of {ai_response} created by image generation OpenAI API #chatgpt #openai #dalle #dalle2 #api #texttoimage"
 
     # Upload the image to Facebook
     url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
