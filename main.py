@@ -36,15 +36,25 @@ topic = [
    "theme park"
 ]
 
+place = [
+    "North America",
+    "South America",
+    "Asia",
+    "Europe",
+    "Africa",
+    "Oceania"
+]
+
 @app.route('/stability_post_insta', methods=['GET'])
 def stability_post_insta():
 
-    # pick topic randomly
+    # pick topic and place randomly
     picked_topic = random.choice(topic)
+    picked_place = random.choice(place)
 
     # make openai parameter
     input = []
-    text = f'pick one {picked_topic} all over the world.'
+    text = f'pick one {picked_topic} in {picked_place} countries.'
     # text = 'pick one place all over the world'
     new_message = {"role":"user", "content":text}
     input.append(new_message)
@@ -105,12 +115,13 @@ def stability_post_insta():
 @app.route('/openai_post_insta', methods=['GET'])
 def openai_post_insta():
 
-    # pick topic randomly
+    # pick topic and place randomly
     picked_topic = random.choice(topic)
+    picked_place = random.choice(place)
 
     # make openai parameter
     input = []
-    text = f'pick one {picked_topic} all over the world.'
+    text = f'pick one {picked_topic} in {picked_place} countries.'
     # text = 'pick one place all over the world'
     new_message = {"role":"user", "content":text}
     input.append(new_message)
