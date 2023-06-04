@@ -45,12 +45,81 @@ place = [
     "Oceania"
 ]
 
+pattern = [
+    "illustration",
+    "stencil art",
+    "crayon",
+    "crayon art",
+    "chalk",
+    "chalk art",
+    "etching",
+    "oil paintings",
+    "ballpoint pen",
+    "ballpoint pen art",
+    "colored pencil",
+    "watercolor",
+    "Chinese watercolor",
+    "pastels",
+    "woodcut",
+    "charcoal",
+    "line drawing",
+    "screen print",
+    "photocollage",
+    "storybook illustration",
+    "newspaper cartoon",
+    "vintage illustration from 1960s",
+    "vintage illustration from 1980s",
+    "anime style",
+    "anime style, official art",
+    "manga style",
+    "Studio Ghibli style",
+    "kawaii",
+    "pixel art",
+    "screenshot from SNES game",
+    "vector illustration",
+    "sticker art",
+    "3D illustration",
+    "cute 3D illustration in the style of Pixar",
+    "Octane Render",
+    "digital art",
+    "2.5D",
+    "isometric art",
+    "ceramic art",
+    "geometric art",
+    "surrealism",
+    "Dadaism",
+    "metaphysical painting",
+    "orphism",
+    "cubism",
+    "suprematism",
+    "De Stijl",
+    "futurism",
+    "expressionism",
+    "realism",
+    "impressionism",
+    "Art Nouveau",
+    "baroque painting",
+    "rococo painting",
+    "mannerism painting",
+    "bauhaus painting",
+    "ancient Egyptian papyrus",
+    "ancient Roman mosaic",
+    "ukiyo-e",
+    "painted in the style of Vincent van Gogh",
+    "painted in the style of Alphonse Mucha",
+    "painted in the style of Sophie Anderson",
+    "painting by Vincent van Gogh",
+    "painting by Alphonse Mucha",
+    "painting by Sophie Anderson",  
+]
+
 @app.route('/stability_post_insta', methods=['GET'])
 def stability_post_insta():
 
     # pick topic and place randomly
     picked_topic = random.choice(topic)
     picked_place = random.choice(place)
+    picked_pattern = random.choice(pattern)
 
     # make openai parameter
     input = []
@@ -64,9 +133,13 @@ def stability_post_insta():
     ai_response = result.choices[0].message.content
     print(ai_response)
 
+    # for genarating images prompt
+    my_prompt = f"{ai_response}, {picked_pattern}"
+    print(my_prompt)
+
     # generate image by stability
     stability_api = client.StabilityInference(key=STABILITY_KEY, verbose=True)
-    answers = stability_api.generate(prompt=ai_response)
+    answers = stability_api.generate(prompt=my_prompt)
 
     # save image as file
     image_path = f"/tmp/image_{BUSINESS_ACCOUNT_ID}.png"
@@ -118,6 +191,7 @@ def openai_post_insta():
     # pick topic and place randomly
     picked_topic = random.choice(topic)
     picked_place = random.choice(place)
+    picked_pattern = random.choice(pattern)
 
     # make openai parameter
     input = []
@@ -131,9 +205,13 @@ def openai_post_insta():
     ai_response = result.choices[0].message.content
     print(ai_response)
 
+    # for genarating images prompt
+    my_prompt = f"{ai_response}, {picked_pattern}"
+    print(my_prompt)
+
     # generate image by openai
     response = openai.Image.create(
-        prompt=ai_response,
+        prompt=my_prompt,
         n=1,
         size="512x512",
         response_format="b64_json",
