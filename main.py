@@ -248,6 +248,21 @@ def openai_post_insta():
     if response.status_code != 200:
         raise Exception(f"Failed to publish photo: {response.text}")
 
+    # Upload the image to Facebook as story
+    url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
+    params = {'access_token': PAGE_ACCESS_TOKEN, 'image_url':image_url, 'media_type':'STORIES'}
+    response = requests.post(url, params=params)
+    if response.status_code != 200:
+        raise Exception(f"Failed to upload image: {response.text}")
+    media_id = response.json()['id']
+
+    # Publish the photo to Instagram as story
+    url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media_publish"
+    params = {'access_token': PAGE_ACCESS_TOKEN, 'creation_id': media_id}
+    response = requests.post(url, params=params)
+    if response.status_code != 200:
+        raise Exception(f"Failed to publish photo: {response.text}")
+    
     print('Image uploaded and published successfully!')
 
     if os.path.exists(image_path): # check if the file exists
