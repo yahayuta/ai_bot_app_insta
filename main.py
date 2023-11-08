@@ -1,10 +1,11 @@
 import requests
 import os
-import openai
 import base64
 import random
 import time
 import io
+import json
+from openai import OpenAI
 
 from flask import Flask
 from google.cloud import storage
@@ -19,9 +20,9 @@ PAGE_ACCESS_TOKEN = os.environ.get('INSTA_PAGE_ACCESS_TOKEN', '')
 VERIFY_TOKEN = os.environ.get('INSTA_PAGE_VERIFY_TOKEN', '')
 BUSINESS_ACCOUNT_ID = os.environ.get('INSTA_BUSINESS_ACCOUNT_ID', '')
 STABILITY_KEY = os.environ.get('STABILITY_KEY', '')
-openai.api_key = os.environ.get('OPENAI_TOKEN', '')
+client = OpenAI(api_key=os.environ.get('OPENAI_TOKEN', ''))
 
-AI_ENGINE = 'gpt-3.5-turbo'
+AI_ENGINE = 'gpt-3.5-turbo-1106'
 
 topic = [
    "city",
@@ -129,7 +130,7 @@ def stability_post_insta():
     input.append(new_message)
 
     # send message to openai api
-    result = openai.ChatCompletion.create(model=AI_ENGINE, messages=input)    
+    result = client.chat.completions.create(model=AI_ENGINE, messages=input)    
     ai_response = result.choices[0].message.content
     print(ai_response)
 
@@ -201,7 +202,7 @@ def openai_post_insta():
     input.append(new_message)
 
     # send message to openai api
-    result = openai.ChatCompletion.create(model=AI_ENGINE, messages=input)    
+    result = client.chat.completions.create(model=AI_ENGINE, messages=input)    
     ai_response = result.choices[0].message.content
     print(ai_response)
 
@@ -210,19 +211,29 @@ def openai_post_insta():
     print(my_prompt)
 
     # generate image by openai
-    response = openai.Image.create(
+    response = client.images.generate(
+        model="dall-e-3",
         prompt=my_prompt,
         n=1,
-        size="512x512",
-        response_format="b64_json",
+        size="1024x1024",
+        #response_format="b64_json",
     )
+
+    print(response)
+
+    url = response.data[0].url
+
+    response = requests.get(url)
 
     # save image as file
     image_path = f"/tmp/image_{BUSINESS_ACCOUNT_ID}.png"
-    for data, n in zip(response["data"], range(1)):
-        img_data = base64.b64decode(data["b64_json"])
-        with open(image_path, "wb") as f:
-            f.write(img_data)
+    # for data, n in zip(response["data"], range(1)):
+    #     img_data = base64.b64decode(data["b64_json"])
+    #     with open(image_path, "wb") as f:
+    #         f.write(img_data)
+
+    with open(image_path, 'wb') as file:
+        file.write(response.content)
 
     current_time = int(time.time())
     current_time_string = str(current_time)
@@ -231,7 +242,7 @@ def openai_post_insta():
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
     print(image_url)
 
-    caption = f"This is an image of {ai_response} created by image generation OpenAI API #chatgpt #openai #dalle #dalle2 #api #texttoimage"
+    caption = f"This is an image of {ai_response} created by image generation OpenAI API #chatgpt #openai #dalle #dalle3 #api #texttoimage"
 
     # Upload the image to Facebook
     url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
