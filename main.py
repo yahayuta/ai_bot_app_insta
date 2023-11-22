@@ -242,7 +242,32 @@ def openai_post_insta():
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
     print(image_url)
 
-    caption = f"This is an image of {ai_response} created by image generation OpenAI API #chatgpt #openai #dalle #dalle3 #api #texttoimage"
+    response = client.chat.completions.create(
+    model="gpt-4-vision-preview",
+    messages=[
+        {
+        "role": "user",
+        "content": [
+            {
+            "type": "text",
+            "text": f"What are in this image? The image title tells that {ai_response}",
+            },
+            {
+            "type": "image_url",
+            "image_url": {
+                "url": image_url,
+            },
+            },
+        ],
+        }
+    ],
+    max_tokens=1000,
+    )
+
+    ai_response = response.choices[0].message.content
+    print(ai_response)
+
+    caption = f"{ai_response} #chatgpt #openai #api #dalle3 #texttoimage"
 
     # Upload the image to Facebook
     url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
