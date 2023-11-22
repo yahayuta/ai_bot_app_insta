@@ -242,26 +242,27 @@ def openai_post_insta():
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
     print(image_url)
 
+    # vision api making image details
     response = client.chat.completions.create(
-    model="gpt-4-vision-preview",
-    messages=[
-        {
-        "role": "user",
-        "content": [
+        model="gpt-4-vision-preview",
+        messages=[
             {
-            "type": "text",
-            "text": f"What are in this image? The image title tells that {ai_response}",
-            },
-            {
-            "type": "image_url",
-            "image_url": {
-                "url": image_url,
-            },
-            },
+            "role": "user",
+            "content": [
+                {
+                "type": "text",
+                "text": f"What are in this image? The image title tells that {ai_response}",
+                },
+                {
+                "type": "image_url",
+                "image_url": {
+                    "url": image_url,
+                },
+                },
+            ],
+            }
         ],
-        }
-    ],
-    max_tokens=1000,
+        max_tokens=1000,
     )
 
     ai_response = response.choices[0].message.content
