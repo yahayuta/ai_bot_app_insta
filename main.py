@@ -216,7 +216,6 @@ def openai_post_insta():
         prompt=my_prompt,
         n=1,
         size="1024x1024",
-        #response_format="b64_json",
     )
 
     print(response)
@@ -227,10 +226,6 @@ def openai_post_insta():
 
     # save image as file
     image_path = f"/tmp/image_{BUSINESS_ACCOUNT_ID}.png"
-    # for data, n in zip(response["data"], range(1)):
-    #     img_data = base64.b64decode(data["b64_json"])
-    #     with open(image_path, "wb") as f:
-    #         f.write(img_data)
 
     with open(image_path, 'wb') as file:
         file.write(response.content)
