@@ -245,14 +245,14 @@ def openai_post_insta():
             "role": "user",
             "content": [
                 {
-                "type": "text",
-                "text": f"What are in this image? The image title tells that {ai_response}",
+                    "type": "text",
+                    "text": f"What are in this image? Describe it good for sns post. The image title tells that {ai_response}",
                 },
                 {
-                "type": "image_url",
-                "image_url": {
-                    "url": image_url,
-                },
+                    "type": "image_url",
+                    "image_url": {
+                        "url": image_url,
+                    },
                 },
             ],
             }
