@@ -114,32 +114,122 @@ pattern = [
     "painting by Sophie Anderson",  
 ]
 
+cartoons = [
+    "Naruto",
+    "Dragon Ball Z",
+    "One Piece",
+    "Sailor Moon",
+    "Pokémon",
+    "Attack on Titan",
+    "My Hero Academia",
+    "Death Note",
+    "Fullmetal Alchemist",
+    "Bleach",
+    "Neon Genesis Evangelion",
+    "Cowboy Bebop",
+    "Spirited Away",
+    "Demon Slayer: Kimetsu no Yaiba",
+    "Tokyo Ghoul",
+    "One Punch Man",
+    "Hunter x Hunter",
+    "Fairy Tail",
+    "JoJo's Bizarre Adventure",
+    "Yu Yu Hakusho",
+    "Mob Psycho 100",
+    "Akira",
+    "Your Name",
+    "Sword Art Online",
+    "Naruto Shippuden",
+    "Death Parade",
+    "Ghost in the Shell",
+    "Ranma ½",
+    "Black Clover",
+    "Digimon",
+    "Initial D",
+    "Gurren Lagann",
+    "Inuyasha",
+    "Cardcaptor Sakura",
+    "Gintama",
+    "The Promised Neverland",
+    "Parasyte -the maxim-",
+    "Code Geass",
+    "Trigun",
+    "Rurouni Kenshin",
+    "Kill la Kill",
+    "Wolf's Rain",
+    "Fate/stay night",
+    "Berserk",
+    "Tokyo Mew Mew",
+    "Slam Dunk",
+    "Detective Conan (Case Closed)",
+    "Doraemon",
+    "Astro Boy",
+    "Kimba the White Lion (Jungle Emperor)",
+    "Speed Racer (Mach GoGoGo)",
+    "Heidi, Girl of the Alps",
+    "Princess Knight (Ribon no Kishi)",
+    "Sazae-san",
+    "Lupin III",
+    "Cyborg 009",
+    "Gatchaman (Science Ninja Team Gatchaman)",
+    "Dragon Ball",
+    "Mazinger Z",
+    "Candy Candy",
+    "Getter Robo",
+    "Space Battleship Yamato (Star Blazers)",
+    "Tiger Mask",
+    "GeGeGe no Kitaro",
+    "Jungle Emperor Leo (Leo the Lion)",
+    "Obake no Q-tarō",
+    "Akage no Anne (Anne of Green Gables)",
+    "Princess Sarah (A Little Princess Sara)",
+    "Galaxy Express 999",
+    "The Rose of Versailles (Versailles no Bara)",
+    "Devilman",
+    "Future Boy Conan",
+    "Tetsujin 28-go (Gigantor)",
+    "Urusei Yatsura (Lum Invader)",
+    "The Adventures of Hutch the Honeybee",
+    "Dokonjō Gaeru (The Gutsy Frog)",
+    "Captain Tsubasa",
+    "Maison Ikkoku",
+    "Nausicaä of the Valley of the Wind",
+    "Kinnikuman (Muscle Man)",
+    "Science Ninja Team Gatchaman",
+    "Lupin III: Part II",
+    "Ganbare!! Tabuchi-kun!!",
+    "Sally the Witch (Mahōtsukai Sarī)",
+    "Yatterman",
+    "Himitsu no Akko-chan (Secret Akko-chan)",
+    "The Snow Queen",
+    "Panda! Go, Panda!",
+    "Space Pirate Captain Harlock",
+    "Dokaben",
+    "Tensai Bakabon",
+    "Combattler V",
+    "Casshan",
+    "Cutie Honey",
+    "Magical Princess Minky Momo",
+    "Gekisou! Rubenkaiser",
+    "Hana no Ko Lunlun"
+]
+
 @app.route('/stability_post_insta', methods=['GET'])
 def stability_post_insta():
 
     # pick topic and place randomly
-    picked_topic = random.choice(topic)
-    picked_place = random.choice(place)
+    picked_cartoon = random.choice(cartoons)
     picked_pattern = random.choice(pattern)
 
-    # make openai parameter
-    input = []
-    text = f'pick one {picked_topic} in {picked_place} countries.'
-    # text = 'pick one place all over the world'
-    new_message = {"role":"user", "content":text}
-    input.append(new_message)
-
-    # send message to openai api
-    result = openai.chat.completions.create(model=AI_ENGINE, messages=input)    
-    ai_response = result.choices[0].message.content
-    print(ai_response)
-
     # for genarating images prompt
-    my_prompt = f"{ai_response}, {picked_pattern}"
+    my_prompt = f"{picked_cartoon}, {picked_pattern}"
     print(my_prompt)
 
     # generate image by stability
-    stability_api = client.StabilityInference(key=STABILITY_KEY, verbose=True)
+    stability_api = client.StabilityInference(
+        key=STABILITY_KEY, 
+        verbose=True,
+        engine="stable-diffusion-xl-1024-v1-0",)
     answers = stability_api.generate(prompt=my_prompt)
 
     # save image as file
@@ -168,7 +258,7 @@ def stability_post_insta():
             "content": [
                 {
                     "type": "text",
-                    "text": f"What are in this image? Describe it good for sns post. The image title tells that {ai_response}",
+                    "text": f"What are in this image? Describe it good for sns post. The image title tells that {my_prompt}",
                 },
                 {
                     "type": "image_url",
@@ -185,7 +275,7 @@ def stability_post_insta():
     ai_response = response.choices[0].message.content
     print(ai_response)
 
-    caption = f"{ai_response} #api #stablediffusion #texttoimage"
+    caption = f"{ai_response} #api #stabilityai #stablediffusion #texttoimage"
 
     # Upload the image to Facebook
     url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
