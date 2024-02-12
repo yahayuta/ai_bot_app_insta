@@ -20,7 +20,7 @@ PAGE_ACCESS_TOKEN = os.environ.get('INSTA_PAGE_ACCESS_TOKEN', '')
 VERIFY_TOKEN = os.environ.get('INSTA_PAGE_VERIFY_TOKEN', '')
 BUSINESS_ACCOUNT_ID = os.environ.get('INSTA_BUSINESS_ACCOUNT_ID', '')
 STABILITY_KEY = os.environ.get('STABILITY_KEY', '')
-client = OpenAI(api_key=os.environ.get('OPENAI_TOKEN', ''))
+openai = OpenAI(api_key=os.environ.get('OPENAI_TOKEN', ''))
 
 AI_ENGINE = 'gpt-3.5-turbo-1106'
 
@@ -130,7 +130,7 @@ def stability_post_insta():
     input.append(new_message)
 
     # send message to openai api
-    result = client.chat.completions.create(model=AI_ENGINE, messages=input)    
+    result = openai.chat.completions.create(model=AI_ENGINE, messages=input)    
     ai_response = result.choices[0].message.content
     print(ai_response)
 
@@ -160,7 +160,7 @@ def stability_post_insta():
     print(image_url)
 
     # vision api making image details
-    response = client.chat.completions.create(
+    response = openai.chat.completions.create(
         model="gpt-4-vision-preview",
         messages=[
             {
@@ -243,7 +243,7 @@ def openai_post_insta():
     input.append(new_message)
 
     # send message to openai api
-    result = client.chat.completions.create(model=AI_ENGINE, messages=input)    
+    result = openai.chat.completions.create(model=AI_ENGINE, messages=input)    
     ai_response = result.choices[0].message.content
     print(ai_response)
 
@@ -252,7 +252,7 @@ def openai_post_insta():
     print(my_prompt)
 
     # generate image by openai
-    response = client.images.generate(
+    response = openai.images.generate(
         model="dall-e-3",
         prompt=my_prompt,
         n=1,
@@ -279,7 +279,7 @@ def openai_post_insta():
     print(image_url)
 
     # vision api making image details
-    response = client.chat.completions.create(
+    response = openai.chat.completions.create(
         model="gpt-4-vision-preview",
         messages=[
             {
