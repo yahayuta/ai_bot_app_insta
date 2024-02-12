@@ -159,7 +159,33 @@ def stability_post_insta():
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
     print(image_url)
 
-    caption = f"This is an image of {ai_response} created by image generation Stable Diffusion API #stablediffusion #texttoimage #api"
+    # vision api making image details
+    response = client.chat.completions.create(
+        model="gpt-4-vision-preview",
+        messages=[
+            {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": f"What are in this image? Describe it good for sns post. The image title tells that {ai_response}",
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": image_url,
+                    },
+                },
+            ],
+            }
+        ],
+        max_tokens=1000,
+    )
+
+    ai_response = response.choices[0].message.content
+    print(ai_response)
+
+    caption = f"{ai_response} #api #stablediffusion #texttoimage"
 
     # Upload the image to Facebook
     url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
@@ -176,6 +202,21 @@ def stability_post_insta():
     if response.status_code != 200:
         raise Exception(f"Failed to publish photo: {response.text}")
 
+    # Upload the image to Facebook as story
+    url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
+    params = {'access_token': PAGE_ACCESS_TOKEN, 'image_url':image_url, 'media_type':'STORIES'}
+    response = requests.post(url, params=params)
+    if response.status_code != 200:
+        raise Exception(f"Failed to upload image: {response.text}")
+    media_id = response.json()['id']
+
+    # Publish the photo to Instagram as story
+    url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media_publish"
+    params = {'access_token': PAGE_ACCESS_TOKEN, 'creation_id': media_id}
+    response = requests.post(url, params=params)
+    if response.status_code != 200:
+        raise Exception(f"Failed to publish photo: {response.text}")
+    
     print('Image uploaded and published successfully!')
 
     if os.path.exists(image_path): # check if the file exists
