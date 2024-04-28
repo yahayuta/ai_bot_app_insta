@@ -21,30 +21,6 @@ BUSINESS_ACCOUNT_ID = os.environ.get('INSTA_BUSINESS_ACCOUNT_ID', '')
 STABILITY_KEY = os.environ.get('STABILITY_KEY', '')
 openai = OpenAI(api_key=os.environ.get('OPENAI_TOKEN', ''))
 
-AI_ENGINE = 'gpt-3.5-turbo-1106'
-
-topic = [
-   "city",
-   "world heritage",
-   "sightseeing place",
-   "airport",
-   "train station",
-   "sea port",
-   "bridge",
-   "zoo",
-   "aquarium",
-   "theme park"
-]
-
-place = [
-    "North America",
-    "South America",
-    "Asia",
-    "Europe",
-    "Africa",
-    "Oceania"
-]
-
 pattern = [
     "illustration",
     "stencil art",
@@ -216,7 +192,7 @@ cartoons = [
 @app.route('/stability_post_insta', methods=['GET'])
 def stability_post_insta():
 
-    # pick topic and place randomly
+    # pick cartoon and pattern
     picked_cartoon = random.choice(cartoons)
     picked_pattern = random.choice(pattern)
 
@@ -319,25 +295,12 @@ def stability_post_insta():
 @app.route('/openai_post_insta', methods=['GET'])
 def openai_post_insta():
 
-    # pick topic and place randomly
-    picked_topic = random.choice(topic)
-    picked_place = random.choice(place)
+    # pick cartoon and pattern
+    picked_cartoon = random.choice(cartoons)
     picked_pattern = random.choice(pattern)
 
-    # make openai parameter
-    input = []
-    text = f'pick one {picked_topic} in {picked_place} countries.'
-    # text = 'pick one place all over the world'
-    new_message = {"role":"user", "content":text}
-    input.append(new_message)
-
-    # send message to openai api
-    result = openai.chat.completions.create(model=AI_ENGINE, messages=input)    
-    ai_response = result.choices[0].message.content
-    print(ai_response)
-
     # for genarating images prompt
-    my_prompt = f"{ai_response}, {picked_pattern}"
+    my_prompt = f"{picked_cartoon}, {picked_pattern}"
     print(my_prompt)
 
     # generate image by openai
@@ -376,7 +339,7 @@ def openai_post_insta():
             "content": [
                 {
                     "type": "text",
-                    "text": f"What are in this image? Describe it good for sns post. The image title tells that {ai_response}",
+                    "text": f"What are in this image? Describe it good for sns post. The image title tells that {my_prompt}",
                 },
                 {
                     "type": "image_url",
