@@ -3,14 +3,13 @@ import os
 import random
 import time
 import io
-import json
-from openai import OpenAI
+import stability_sdk.interfaces.gooseai.generation.generation_pb2 as generation
 
+from openai import OpenAI
 from flask import Flask
 from google.cloud import storage
 from PIL import Image
 from stability_sdk import client
-import stability_sdk.interfaces.gooseai.generation.generation_pb2 as generation
 
 app = Flask(__name__)
 
@@ -224,65 +223,12 @@ def stability_post_insta():
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
     print(image_url)
 
-    # vision api making image details
-    response = openai.chat.completions.create(
-        model="gpt-4-vision-preview",
-        messages=[
-            {
-            "role": "user",
-            "content": [
-                {
-                    "type": "text",
-                    "text": f"What are in this image? Describe it good for sns post. The image title tells that {my_prompt}",
-                },
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": image_url,
-                    },
-                },
-            ],
-            }
-        ],
-        max_tokens=1000,
-    )
-
-    ai_response = response.choices[0].message.content
+    ai_response = exec_openai_vision(image_url, my_prompt)
     print(ai_response)
 
     caption = f"{ai_response} #api #stabilityai #stablediffusion #texttoimage"
 
-    # Upload the image to Facebook
-    url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
-    params = {'access_token': PAGE_ACCESS_TOKEN, 'image_url':image_url, 'caption':caption}
-    response = requests.post(url, params=params)
-    if response.status_code != 200:
-        raise Exception(f"Failed to upload image: {response.text}")
-    media_id = response.json()['id']
-
-    # Publish the photo to Instagram
-    url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media_publish"
-    params = {'access_token': PAGE_ACCESS_TOKEN, 'creation_id': media_id}
-    response = requests.post(url, params=params)
-    if response.status_code != 200:
-        raise Exception(f"Failed to publish photo: {response.text}")
-
-    # Upload the image to Facebook as story
-    url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
-    params = {'access_token': PAGE_ACCESS_TOKEN, 'image_url':image_url, 'media_type':'STORIES'}
-    response = requests.post(url, params=params)
-    if response.status_code != 200:
-        raise Exception(f"Failed to upload image: {response.text}")
-    media_id = response.json()['id']
-
-    # Publish the photo to Instagram as story
-    url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media_publish"
-    params = {'access_token': PAGE_ACCESS_TOKEN, 'creation_id': media_id}
-    response = requests.post(url, params=params)
-    if response.status_code != 200:
-        raise Exception(f"Failed to publish photo: {response.text}")
-    
-    print('Image uploaded and published successfully!')
+    exec_instagram_post(image_url, caption)
 
     if os.path.exists(image_path): # check if the file exists
         os.remove(image_path) # delete the file
@@ -330,7 +276,41 @@ def openai_post_insta():
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
     print(image_url)
 
-    # vision api making image details
+    ai_response = exec_openai_vision(image_url, my_prompt)
+    print(ai_response)
+
+    caption = f"{ai_response} #chatgpt #openai #api #dalle3 #texttoimage"
+    
+    exec_instagram_post(image_url, caption)
+
+    if os.path.exists(image_path): # check if the file exists
+        os.remove(image_path) # delete the file
+        print(f"{image_path} has been deleted.")
+    else:
+        print(f"{image_path} does not exist.")
+
+    return "ok", 200
+
+#  Uploads a file to the Google Cloud Storage bucket
+def upload_to_bucket(blob_name, file_path, bucket_name):
+    # Create a Cloud Storage client
+    storage_client = storage.Client()
+
+    # Get the bucket that the file will be uploaded to
+    bucket = storage_client.bucket(bucket_name)
+
+    # Create a new blob and upload the file's content
+    blob = bucket.blob(blob_name)
+    blob.upload_from_filename(file_path)
+
+    # Make the blob publicly viewable
+    blob.make_public()
+
+    # Return the public URL of the uploaded file
+    return blob.public_url
+
+# vision api making image details
+def exec_openai_vision(image_url, my_prompt):
     response = openai.chat.completions.create(
         model="gpt-4-vision-preview",
         messages=[
@@ -355,8 +335,10 @@ def openai_post_insta():
 
     ai_response = response.choices[0].message.content
     print(ai_response)
+    return ai_response
 
-    caption = f"{ai_response} #chatgpt #openai #api #dalle3 #texttoimage"
+# post image and text to instagram
+def exec_instagram_post(image_url, caption):
 
     # Upload the image to Facebook
     url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
@@ -389,32 +371,6 @@ def openai_post_insta():
         raise Exception(f"Failed to publish photo: {response.text}")
     
     print('Image uploaded and published successfully!')
-
-    if os.path.exists(image_path): # check if the file exists
-        os.remove(image_path) # delete the file
-        print(f"{image_path} has been deleted.")
-    else:
-        print(f"{image_path} does not exist.")
-
-    return "ok", 200
-
-#  Uploads a file to the Google Cloud Storage bucket
-def upload_to_bucket(blob_name, file_path, bucket_name):
-    # Create a Cloud Storage client
-    storage_client = storage.Client()
-
-    # Get the bucket that the file will be uploaded to
-    bucket = storage_client.bucket(bucket_name)
-
-    # Create a new blob and upload the file's content
-    blob = bucket.blob(blob_name)
-    blob.upload_from_filename(file_path)
-
-    # Make the blob publicly viewable
-    blob.make_public()
-
-    # Return the public URL of the uploaded file
-    return blob.public_url
 
 if __name__ == '__main__':
     app.run(debug=True)
