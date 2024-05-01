@@ -230,11 +230,7 @@ def stability_post_insta():
 
     exec_instagram_post(image_url, caption)
 
-    if os.path.exists(image_path): # check if the file exists
-        os.remove(image_path) # delete the file
-        print(f"{image_path} has been deleted.")
-    else:
-        print(f"{image_path} does not exist.")
+    remove_img_file(image_path)
 
     return "ok", 200
 
@@ -283,11 +279,7 @@ def openai_post_insta():
     
     exec_instagram_post(image_url, caption)
 
-    if os.path.exists(image_path): # check if the file exists
-        os.remove(image_path) # delete the file
-        print(f"{image_path} has been deleted.")
-    else:
-        print(f"{image_path} does not exist.")
+    remove_img_file(image_path)
 
     return "ok", 200
 
@@ -372,5 +364,13 @@ def exec_instagram_post(image_url, caption):
     
     print('Image uploaded and published successfully!')
 
+# remove image file genarated by ai
+def remove_img_file(image_path):
+    if os.path.exists(image_path): # check if the file exists
+        os.remove(image_path) # delete the file
+        print(f"{image_path} has been deleted.")
+    else:
+        print(f"{image_path} does not exist.")
+        
 if __name__ == '__main__':
     app.run(debug=True)
