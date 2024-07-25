@@ -304,7 +304,7 @@ def upload_to_bucket(blob_name, file_path, bucket_name):
 # vision api making image details
 def exec_openai_vision(image_url, my_prompt):
     response = openai.chat.completions.create(
-        model="gpt-4-vision-preview",
+        model="gpt-4o-mini",
         messages=[
             {
             "role": "user",
