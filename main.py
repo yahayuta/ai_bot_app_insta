@@ -333,7 +333,7 @@ def exec_openai_vision(image_url, my_prompt):
 def exec_instagram_post(image_url, caption):
 
     # Upload the image to Facebook
-    url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
+    url = f"https://graph.instagram.com/v22.0/{BUSINESS_ACCOUNT_ID}/media"
     params = {'access_token': PAGE_ACCESS_TOKEN, 'image_url':image_url, 'caption':caption}
     response = requests.post(url, params=params)
     if response.status_code != 200:
@@ -341,14 +341,14 @@ def exec_instagram_post(image_url, caption):
     media_id = response.json()['id']
 
     # Publish the photo to Instagram
-    url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media_publish"
+    url = f"https://graph.instagram.com/v22.0/{BUSINESS_ACCOUNT_ID}/media_publish"
     params = {'access_token': PAGE_ACCESS_TOKEN, 'creation_id': media_id}
     response = requests.post(url, params=params)
     if response.status_code != 200:
         raise Exception(f"Failed to publish photo: {response.text}")
 
     # Upload the image to Facebook as story
-    url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media"
+    url = f"https://graph.instagram.com/v22.0/{BUSINESS_ACCOUNT_ID}/media"
     params = {'access_token': PAGE_ACCESS_TOKEN, 'image_url':image_url, 'media_type':'STORIES'}
     response = requests.post(url, params=params)
     if response.status_code != 200:
@@ -356,7 +356,7 @@ def exec_instagram_post(image_url, caption):
     media_id = response.json()['id']
 
     # Publish the photo to Instagram as story
-    url = f"https://graph.facebook.com/{BUSINESS_ACCOUNT_ID}/media_publish"
+    url = f"https://graph.instagram.com/v22.0/{BUSINESS_ACCOUNT_ID}/media_publish"
     params = {'access_token': PAGE_ACCESS_TOKEN, 'creation_id': media_id}
     response = requests.post(url, params=params)
     if response.status_code != 200:
