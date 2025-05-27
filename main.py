@@ -1,15 +1,15 @@
-import requests
+import requests # type: ignore
 import os
 import random
 import time
 import io
-import stability_sdk.interfaces.gooseai.generation.generation_pb2 as generation
+import stability_sdk.interfaces.gooseai.generation.generation_pb2 as generation # type: ignore
 
-from openai import OpenAI
-from flask import Flask
+from openai import OpenAI # type: ignore
+from flask import Flask # type: ignore
 from google.cloud import storage
-from PIL import Image
-from stability_sdk import client
+from PIL import Image # type: ignore
+from stability_sdk import client # type: ignore
 
 app = Flask(__name__)
 
@@ -19,6 +19,9 @@ VERIFY_TOKEN = os.environ.get('INSTA_PAGE_VERIFY_TOKEN', '')
 BUSINESS_ACCOUNT_ID = os.environ.get('INSTA_BUSINESS_ACCOUNT_ID', '')
 STABILITY_KEY = os.environ.get('STABILITY_KEY', '')
 openai = OpenAI(api_key=os.environ.get('OPENAI_TOKEN', ''))
+
+THREADS_API_TOKEN = os.environ.get('THREADS_API_TOKEN', '')
+THREADS_USER_ID = os.environ.get('THREADS_USER_ID', '')
 
 pattern = [
     "illustration",
@@ -229,6 +232,7 @@ def stability_post_insta():
     caption = f"{ai_response} #api #stabilityai #stablediffusion #texttoimage"
 
     exec_instagram_post(image_url, caption)
+    exec_threads_post(image_url, caption)
 
     remove_img_file(image_path)
 
@@ -278,6 +282,7 @@ def openai_post_insta():
     caption = f"{ai_response} #chatgpt #openai #api #dalle3 #texttoimage"
     
     exec_instagram_post(image_url, caption)
+    exec_threads_post(image_url, caption)
 
     remove_img_file(image_path)
 
@@ -362,7 +367,30 @@ def exec_instagram_post(image_url, caption):
     if response.status_code != 200:
         raise Exception(f"Failed to publish photo: {response.text}")
     
-    print('Image uploaded and published successfully!')
+    print('instagram Image uploaded and published successfully!')
+
+# post image and text to threads
+def exec_threads_post(image_url, text = ''):
+    # Truncate text to 500 characters as required by Threads API
+    if len(text) > 500:
+        text = text[:500]
+
+    # Upload the image to Facebook
+    url = f"https://graph.threads.net/v1.0/{THREADS_USER_ID}/threads"
+    params = {'access_token': THREADS_API_TOKEN, 'media_type':'IMAGE', 'image_url':image_url, 'text':text}
+    response = requests.post(url, params=params)
+    if response.status_code != 200:
+        raise Exception(f"Failed to upload image: {response.text}")
+    media_id = response.json()['id']
+
+    # Publish the photo to Instagram
+    url = f"https://graph.threads.net/v1.0/{THREADS_USER_ID}/threads_publish"
+    params = {'access_token': THREADS_API_TOKEN, 'creation_id': media_id}
+    response = requests.post(url, params=params)
+    if response.status_code != 200:
+        raise Exception(f"Failed to publish photo: {response.text}")
+    
+    print('threads Image uploaded and published successfully!')
 
 # remove image file genarated by ai
 def remove_img_file(image_path):
