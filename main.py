@@ -10,6 +10,8 @@ from flask import Flask # type: ignore
 from google.cloud import storage
 from PIL import Image # type: ignore
 from stability_sdk import client # type: ignore
+from google import genai
+from io import BytesIO
 
 app = Flask(__name__)
 
@@ -284,6 +286,62 @@ def openai_post_insta():
     exec_instagram_post(image_url, caption)
     exec_threads_post(image_url, caption)
 
+    remove_img_file(image_path)
+
+    return "ok", 200
+
+@app.route('/imagen_post_insta', methods=['GET'])
+def imagen_post_insta():
+    # pick cartoon and pattern
+    picked_cartoon = random.choice(cartoons)
+    picked_pattern = random.choice(pattern)
+
+    # for generating image prompt
+    my_prompt = f"{picked_cartoon}, {picked_pattern}"
+    print(my_prompt)
+
+    # Generate image using Imagen (Google)
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+    result = client.models.generate_images(
+        model="models/imagen-3.0-generate-002",
+        prompt=my_prompt,
+        config=dict(
+            number_of_images=1,
+            output_mime_type="image/jpeg",
+            person_generation="ALLOW_ADULT",
+            aspect_ratio="1:1",
+        ),
+    )
+
+    if not result.generated_images:
+        print("No images generated.")
+        return "No image generated", 500
+
+    image_data = result.generated_images[0].image.image_bytes
+    img = Image.open(BytesIO(image_data))
+
+    # Save image as file
+    image_path = f"/tmp/image_{BUSINESS_ACCOUNT_ID}.jpg"
+    img.save(image_path)
+
+    current_time = int(time.time())
+    current_time_string = str(current_time)
+
+    # Upload image to Google Cloud Storage
+    image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
+    print(image_url)
+
+    # Generate caption using vision model
+    ai_response = exec_openai_vision(image_url, my_prompt)
+    print(ai_response)
+
+    caption = f"{ai_response} #api #google #imagen #texttoimage"
+
+    # Post to Instagram and Threads
+    exec_instagram_post(image_url, caption)
+    exec_threads_post(image_url, caption)
+
+    # Clean up temporary image file
     remove_img_file(image_path)
 
     return "ok", 200
