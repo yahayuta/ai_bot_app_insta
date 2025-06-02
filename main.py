@@ -21,9 +21,32 @@ VERIFY_TOKEN = os.environ.get('INSTA_PAGE_VERIFY_TOKEN', '')
 BUSINESS_ACCOUNT_ID = os.environ.get('INSTA_BUSINESS_ACCOUNT_ID', '')
 STABILITY_KEY = os.environ.get('STABILITY_KEY', '')
 openai = OpenAI(api_key=os.environ.get('OPENAI_TOKEN', ''))
+OPENAI_MODEL = 'gpt-4o-mini'
 
 THREADS_API_TOKEN = os.environ.get('THREADS_API_TOKEN', '')
 THREADS_USER_ID = os.environ.get('THREADS_USER_ID', '')
+
+topic = [
+   "musician or group or band",
+   "movie",
+   "drama",
+   "place",
+   "politician",
+   "athlete",
+   "comedian",
+   "actor",
+   "actress",
+   "city"
+]
+
+place = [
+    "North America",
+    "South America",
+    "Asia",
+    "Europe",
+    "Africa",
+    "Oceania"
+]
 
 pattern = [
     "illustration",
@@ -200,7 +223,7 @@ def stability_post_insta():
     picked_cartoon = random.choice(cartoons)
     picked_pattern = random.choice(pattern)
 
-    # for genarating images prompt
+    # for generating image prompt
     my_prompt = f"{picked_cartoon}, {picked_pattern}"
     print(my_prompt)
 
@@ -243,12 +266,24 @@ def stability_post_insta():
 @app.route('/openai_post_insta', methods=['GET'])
 def openai_post_insta():
 
-    # pick cartoon and pattern
-    picked_cartoon = random.choice(cartoons)
-    picked_pattern = random.choice(pattern)
+    # pick topic randomly
+    picked_topic = random.choice(topic)
+    picked_place = random.choice(place)
 
+    # make openai parameter
+    input = []
+    text = f'pick one {picked_topic} in {picked_place} countries then talk about it very shortly'
+    new_message = {"role":"user", "content":text}
+    input.append(new_message)
+
+    # generate text by openai
+    print(f"OpenAI input: {input}")
+    result = openai.chat.completions.create(model=OPENAI_MODEL, messages=input)
+    ai_response = result.choices[0].message.content
+    
     # for genarating images prompt
-    my_prompt = f"{picked_cartoon}, {picked_pattern}"
+    picked_pattern = random.choice(pattern)
+    my_prompt = f"{ai_response}, {picked_pattern}"
     print(my_prompt)
 
     # generate image by openai
@@ -367,7 +402,7 @@ def upload_to_bucket(blob_name, file_path, bucket_name):
 # vision api making image details
 def exec_openai_vision(image_url, my_prompt):
     response = openai.chat.completions.create(
-        model="gpt-4o-mini",
+        model=OPENAI_MODEL,
         messages=[
             {
             "role": "user",
