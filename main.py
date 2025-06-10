@@ -3,6 +3,7 @@ import os
 import random
 import time
 import io
+import base64
 import stability_sdk.interfaces.gooseai.generation.generation_pb2 as generation # type: ignore
 
 from openai import OpenAI # type: ignore
@@ -12,6 +13,7 @@ from PIL import Image # type: ignore
 from stability_sdk import client # type: ignore
 from google import genai
 from io import BytesIO
+from google.genai import types # type: ignore
 
 app = Flask(__name__)
 
@@ -234,8 +236,11 @@ def stability_post_insta():
         engine="stable-diffusion-xl-1024-v1-0",)
     answers = stability_api.generate(prompt=my_prompt)
 
+    current_time = int(time.time())
+    current_time_string = str(current_time)
+
     # save image as file
-    image_path = f"/tmp/image_{BUSINESS_ACCOUNT_ID}.png"
+    image_path = f"/tmp/image_{BUSINESS_ACCOUNT_ID}_{current_time_string}.png"
     for resp in answers:
         for artifact in resp.artifacts:
             if artifact.finish_reason == generation.FILTER:
@@ -244,14 +249,12 @@ def stability_post_insta():
                 img = Image.open(io.BytesIO(artifact.binary))
                 img.save(image_path)
 
-    current_time = int(time.time())
-    current_time_string = str(current_time)
-
     # Uploads a file to the Google Cloud Storage bucket
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
     print(image_url)
 
-    ai_response = exec_openai_vision(image_url, my_prompt)
+    # Generate caption using vision model
+    ai_response = gemini_chat_with_image(image_path, get_chat_with_image_template(my_prompt))
     print(ai_response)
 
     caption = f"{ai_response} #api #stabilityai #stablediffusion #texttoimage"
@@ -300,20 +303,20 @@ def openai_post_insta():
 
     response = requests.get(url)
 
-    # save image as file
-    image_path = f"/tmp/image_{BUSINESS_ACCOUNT_ID}.png"
-
-    with open(image_path, 'wb') as file:
-        file.write(response.content)
-
     current_time = int(time.time())
     current_time_string = str(current_time)
+
+    # save image as file
+    image_path = f"/tmp/image_{BUSINESS_ACCOUNT_ID}_{current_time_string}.png"
+    with open(image_path, 'wb') as file:
+        file.write(response.content)
 
     # Uploads a file to the Google Cloud Storage bucket
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
     print(image_url)
 
-    ai_response = exec_openai_vision(image_url, my_prompt)
+    # Generate caption using vision model
+    ai_response = gemini_chat_with_image(image_path, get_chat_with_image_template(my_prompt))
     print(ai_response)
 
     caption = f"{ai_response} #chatgpt #openai #api #dalle3 #texttoimage"
@@ -355,19 +358,19 @@ def imagen_post_insta():
     image_data = result.generated_images[0].image.image_bytes
     img = Image.open(BytesIO(image_data))
 
-    # Save image as file
-    image_path = f"/tmp/image_{BUSINESS_ACCOUNT_ID}.jpg"
-    img.save(image_path)
-
     current_time = int(time.time())
     current_time_string = str(current_time)
+
+    # Save image as file
+    image_path = f"/tmp/image_{BUSINESS_ACCOUNT_ID}_{current_time_string}.jpg"
+    img.save(image_path)
 
     # Upload image to Google Cloud Storage
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
     print(image_url)
 
     # Generate caption using vision model
-    ai_response = exec_openai_vision(image_url, my_prompt)
+    ai_response = gemini_chat_with_image(image_path, get_chat_with_image_template(my_prompt))
     print(ai_response)
 
     caption = f"{ai_response} #api #google #imagen #texttoimage"
@@ -426,6 +429,40 @@ def exec_openai_vision(image_url, my_prompt):
     ai_response = response.choices[0].message.content
     print(ai_response)
     return ai_response
+
+# Chat with image and text input
+def gemini_chat_with_image(image_path, prompt_text):
+    try:
+        with open(image_path, "rb") as img_file:
+            image_bytes = img_file.read()
+        encoded_image = base64.b64encode(image_bytes)
+
+        contents = [
+            types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_bytes(mime_type="image/jpeg", data=base64.b64decode(encoded_image)),
+                    types.Part.from_text(text=prompt_text)
+                ],
+            )
+        ]
+
+        generate_content_config = types.GenerateContentConfig(response_mime_type="text/plain")
+
+        genai_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+        # Generate content with image and text
+        response = ""
+        for chunk in genai_client.models.generate_content_stream(
+            model="gemini-2.5-flash-preview-05-20",
+            contents=contents,
+            config=generate_content_config,
+        ):
+            response += chunk.text or ""
+        return response
+
+    except Exception as e:
+        print(f"Error during image + text Gemini request: {e}")
+        return f"Error: {e}"
 
 # post image and text to instagram
 def exec_instagram_post(image_url, caption):
@@ -493,5 +530,9 @@ def remove_img_file(image_path):
     else:
         print(f"{image_path} does not exist.")
         
+# This function returns a template for the chat with image prompt
+def get_chat_with_image_template(prompt):
+    return f"What are in this image? Describe it good for sns post. Return only text of description. The image title tells that {prompt}."
+
 if __name__ == '__main__':
     app.run(debug=True)
