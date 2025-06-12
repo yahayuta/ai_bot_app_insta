@@ -29,16 +29,26 @@ THREADS_API_TOKEN = os.environ.get('THREADS_API_TOKEN', '')
 THREADS_USER_ID = os.environ.get('THREADS_USER_ID', '')
 
 topic = [
-   "musician or group or band",
-   "movie",
-   "drama",
-   "place",
-   "politician",
-   "athlete",
-   "comedian",
-   "actor",
-   "actress",
-   "city"
+    "musician or group or band",
+    "movie",
+    "drama",
+    "place",
+    "politician",
+    "athlete",
+    "comedian",
+    "actor",
+    "actress",
+    "city",
+    "book",
+    "historical figure",
+    "animal",
+    "food",
+    "sport",
+    "company",
+    "brand",
+    "technology",
+    "scientific discovery",
+    "natural phenomenon"
 ]
 
 place = [
