@@ -1,33 +1,44 @@
-import requests # type: ignore
-import os
-import random
-import time
+# --- Standard Library Imports ---
 import io
-import base64
-import stability_sdk.interfaces.gooseai.generation.generation_pb2 as generation # type: ignore
+import os  # For environment variables and file operations
+import random  # For random selection of topics, patterns, etc.
+import time  # For timestamping image files
+import base64  # For encoding images for API requests
+from io import BytesIO  # For in-memory image operations
 
-from openai import OpenAI # type: ignore
-from flask import Flask # type: ignore
-from google.cloud import storage
-from PIL import Image # type: ignore
-from stability_sdk import client # type: ignore
-from google import genai
-from io import BytesIO
-from google.genai import types # type: ignore
+# --- Third-Party Imports ---
+import requests  # type: ignore # For HTTP requests to APIs
+from flask import Flask  # type: ignore # For web server and API endpoints
+from PIL import Image  # type: ignore # For image processing
 
+# Stability AI SDK (for image generation)
+import stability_sdk.interfaces.gooseai.generation.generation_pb2 as generation  # type: ignore # For artifact types
+from stability_sdk import client  # type: ignore # For Stability API client
+
+# OpenAI (for text and image generation)
+from openai import OpenAI  # type: ignore # For OpenAI API client
+
+# Google Cloud & Gemini (for storage and vision models)
+from google.cloud import storage  # For Google Cloud Storage
+from google import genai  # For Gemini API
+from google.genai import types  # type: ignore # For Gemini API types
+
+# --- Flask App Initialization ---
 app = Flask(__name__)
 
-# Replace with your own page access token and verify token
-PAGE_ACCESS_TOKEN = os.environ.get('INSTA_PAGE_ACCESS_TOKEN', '')
-VERIFY_TOKEN = os.environ.get('INSTA_PAGE_VERIFY_TOKEN', '')
-BUSINESS_ACCOUNT_ID = os.environ.get('INSTA_BUSINESS_ACCOUNT_ID', '')
-STABILITY_KEY = os.environ.get('STABILITY_KEY', '')
-openai = OpenAI(api_key=os.environ.get('OPENAI_TOKEN', ''))
-OPENAI_MODEL = 'gpt-4o-mini'
+# --- Environment Variables ---
+# These should be set in your environment or .env file for security and flexibility.
+PAGE_ACCESS_TOKEN = os.environ.get('INSTA_PAGE_ACCESS_TOKEN', '')  # Instagram page access token
+VERIFY_TOKEN = os.environ.get('INSTA_PAGE_VERIFY_TOKEN', '')      # Webhook verification token
+BUSINESS_ACCOUNT_ID = os.environ.get('INSTA_BUSINESS_ACCOUNT_ID', '')  # Instagram business account ID
+STABILITY_KEY = os.environ.get('STABILITY_KEY', '')              # Stability AI API key
+openai = OpenAI(api_key=os.environ.get('OPENAI_TOKEN', ''))       # OpenAI API client
+OPENAI_MODEL = 'gpt-4o-mini'                                     # OpenAI model to use
+THREADS_API_TOKEN = os.environ.get('THREADS_API_TOKEN', '')      # Threads API token
+THREADS_USER_ID = os.environ.get('THREADS_USER_ID', '')          # Threads user ID
 
-THREADS_API_TOKEN = os.environ.get('THREADS_API_TOKEN', '')
-THREADS_USER_ID = os.environ.get('THREADS_USER_ID', '')
-
+# --- Content Categories ---
+# These lists are used to randomly select topics, places, and art styles for content generation.
 topic = [
     "musician or group or band", "movie", "drama", "place", "politician",
     "athlete", "comedian", "actor", "actress", "city", "book",
@@ -111,10 +122,16 @@ cartoons = [
     "Made in Abyss", "86 (Eighty-Six)"
 ]
 
+# --- Flask Endpoints ---
+
 @app.route('/stability_post_insta', methods=['GET'])
 def stability_post_insta():
-
-    # pick cartoon and pattern
+    """
+    Generate an image using Stability AI based on a random cartoon and art pattern,
+    upload it to Google Cloud Storage, generate a caption using Gemini vision model,
+    and post to Instagram and Threads.
+    """
+    # Pick a random cartoon and art pattern for the image generation
     picked_cartoon = random.choice(cartoons)
     picked_pattern = random.choice(pattern)
 
@@ -161,7 +178,11 @@ def stability_post_insta():
 
 @app.route('/openai_post_insta', methods=['GET'])
 def openai_post_insta():
-
+    """
+    Generate a topic and place, use OpenAI to create a short description,
+    generate an image with DALL-E, upload to Google Cloud Storage,
+    generate a caption with Gemini, and post to Instagram and Threads.
+    """
     # pick topic randomly
     picked_topic = random.choice(topic)
     picked_place = random.choice(place)
@@ -223,6 +244,10 @@ def openai_post_insta():
 
 @app.route('/imagen_post_insta', methods=['GET'])
 def imagen_post_insta():
+    """
+    Generate an image using Google Imagen, upload to Google Cloud Storage,
+    generate a caption with Gemini, and post to Instagram and Threads.
+    """
     # pick cartoon and pattern
     picked_cartoon = random.choice(cartoons)
     picked_pattern = random.choice(pattern)
@@ -277,8 +302,12 @@ def imagen_post_insta():
 
     return "ok", 200
 
-#  Uploads a file to the Google Cloud Storage bucket
+# --- Utility Functions ---
+
 def upload_to_bucket(blob_name, file_path, bucket_name):
+    """
+    Upload a file to Google Cloud Storage and return its public URL.
+    """
     # Create a Cloud Storage client
     storage_client = storage.Client()
 
@@ -295,8 +324,10 @@ def upload_to_bucket(blob_name, file_path, bucket_name):
     # Return the public URL of the uploaded file
     return blob.public_url
 
-# vision api making image details
 def exec_openai_vision(image_url, my_prompt):
+    """
+    Use OpenAI's vision model to generate a description for an image.
+    """
     response = openai.chat.completions.create(
         model=OPENAI_MODEL,
         messages=[
@@ -323,8 +354,10 @@ def exec_openai_vision(image_url, my_prompt):
     print(ai_response)
     return ai_response
 
-# Chat with image and text input
 def gemini_chat_with_image(image_path, prompt_text):
+    """
+    Use Gemini API to generate a caption for an image given a prompt.
+    """
     try:
         with open(image_path, "rb") as img_file:
             image_bytes = img_file.read()
@@ -357,9 +390,10 @@ def gemini_chat_with_image(image_path, prompt_text):
         print(f"Error during image + text Gemini request: {e}")
         return f"Error: {e}"
 
-# post image and text to instagram
 def exec_instagram_post(image_url, caption):
-
+    """
+    Post an image and caption to Instagram (feed and story).
+    """
     # Upload the image to Facebook
     url = f"https://graph.instagram.com/v22.0/{BUSINESS_ACCOUNT_ID}/media"
     params = {'access_token': PAGE_ACCESS_TOKEN, 'image_url':image_url, 'caption':caption}
@@ -392,8 +426,10 @@ def exec_instagram_post(image_url, caption):
     
     print('instagram Image uploaded and published successfully!')
 
-# post image and text to threads
 def exec_threads_post(image_url, text = ''):
+    """
+    Post an image and text to Threads.
+    """
     # Truncate text to 500 characters as required by Threads API
     if len(text) > 500:
         text = text[:500]
@@ -415,17 +451,22 @@ def exec_threads_post(image_url, text = ''):
     
     print('threads Image uploaded and published successfully!')
 
-# remove image file genarated by ai
 def remove_img_file(image_path):
+    """
+    Remove a temporary image file from the filesystem.
+    """
     if os.path.exists(image_path): # check if the file exists
         os.remove(image_path) # delete the file
         print(f"{image_path} has been deleted.")
     else:
         print(f"{image_path} does not exist.")
         
-# This function returns a template for the chat with image prompt
 def get_chat_with_image_template(prompt):
+    """
+    Return a template prompt for describing an image for social media.
+    """
     return f"What are in this image? Describe it good for sns post. Return only text of description. The image title tells that {prompt}."
 
 if __name__ == '__main__':
+    # Run the Flask app in debug mode for local development
     app.run(debug=True)
