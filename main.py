@@ -37,6 +37,20 @@ OPENAI_MODEL = 'gpt-4o-mini'                                     # OpenAI model 
 THREADS_API_TOKEN = os.environ.get('THREADS_API_TOKEN', '')      # Threads API token
 THREADS_USER_ID = os.environ.get('THREADS_USER_ID', '')          # Threads user ID
 
+# --- Prompt Tuning Configuration ---
+# Environment variables for fine-tuning prompt generation
+ENABLE_ENHANCED_PROMPTS = os.environ.get('ENABLE_ENHANCED_PROMPTS', 'true').lower() == 'true'
+ENABLE_NEGATIVE_PROMPTS = os.environ.get('ENABLE_NEGATIVE_PROMPTS', 'true').lower() == 'true'
+ENABLE_AB_TESTING = os.environ.get('ENABLE_AB_TESTING', 'false').lower() == 'true'
+PROMPT_COMPLEXITY_LEVEL = int(os.environ.get('PROMPT_COMPLEXITY_LEVEL', '2'))  # 1=simple, 2=enhanced, 3=complex
+
+# Prompt performance tracking
+prompt_performance = {
+    'stability': {'enhanced': 0, 'simple': 0},
+    'dalle': {'enhanced': 0, 'simple': 0},
+    'imagen': {'enhanced': 0, 'simple': 0}
+}
+
 # --- Content Categories ---
 # These lists are used to randomly select topics, places, and art styles for content generation.
 topic = [
@@ -84,6 +98,54 @@ pattern = [
     "Y2K style graphics", "generative fractal art", "VR sculpture screenshot"
 ]
 
+# Enhanced prompt components
+lighting_styles = [
+    "dramatic lighting", "soft lighting", "golden hour", "blue hour", "studio lighting",
+    "natural lighting", "backlit", "side lighting", "rim lighting", "low key lighting",
+    "high key lighting", "cinematic lighting", "volumetric lighting", "neon lighting",
+    "candlelight", "moonlight", "sunset lighting", "dawn lighting"
+]
+
+composition_styles = [
+    "close-up shot", "wide shot", "medium shot", "extreme close-up", "bird's eye view",
+    "worm's eye view", "dutch angle", "symmetrical composition", "rule of thirds",
+    "leading lines", "framed composition", "shallow depth of field", "deep focus",
+    "portrait orientation", "landscape orientation", "square format"
+]
+
+mood_atmospheres = [
+    "mysterious", "whimsical", "melancholic", "energetic", "peaceful", "dramatic",
+    "nostalgic", "futuristic", "vintage", "romantic", "adventurous", "contemplative",
+    "playful", "serious", "dreamy", "surreal", "elegant", "raw", "intimate"
+]
+
+quality_enhancers = [
+    "highly detailed", "8k resolution", "professional photography", "masterpiece",
+    "award winning", "trending on artstation", "unreal engine 5", "octane render",
+    "cinematic", "photorealistic", "hyperrealistic", "detailed textures"
+]
+
+negative_prompts = [
+    "blurry", "low quality", "pixelated", "watermark", "signature", "text",
+    "deformed", "bad anatomy", "disfigured", "poorly drawn face", "mutation",
+    "mutated", "extra limb", "ugly", "poorly drawn hands", "missing limb",
+    "floating limbs", "disconnected limbs", "malformed hands", "out of focus",
+    "long neck", "long body", "morbid", "mutilated", "out of frame",
+    "duplicate", "error", "out of frame", "extra fingers", "mutated hands and fingers",
+    "out of frame", "double", "two heads", "blurry", "out of focus", "glitch",
+    "deformed", "multiple", "bad", "missing", "extra", "fused", "too many",
+    "long", "hunchbacked", "mutation", "mutilated", "bad anatomy", "bad proportions",
+    "extra limbs", "cloned face", "disfigured", "gross proportions", "malformed limbs",
+    "missing arms", "missing legs", "extra arms", "extra legs", "fused fingers",
+    "too many fingers", "long neck", "cross-eyed", "mutated hands and fingers",
+    "out of frame", "duplicate", "morbid", "mutilated", "out of frame", "extra",
+    "bad anatomy", "gross proportions", "malformed limbs", "missing arms",
+    "missing legs", "extra arms", "extra legs", "mutated hands and fingers",
+    "out of frame", "duplicate", "morbid", "mutilated", "out of frame", "extra",
+    "bad anatomy", "gross proportions", "malformed limbs", "missing arms",
+    "missing legs", "extra arms", "extra legs", "mutated hands and fingers"
+]
+
 cartoons = [
     "Naruto", "Dragon Ball Z", "One Piece", "Sailor Moon", "Pokémon", "Attack on Titan",
     "My Hero Academia", "Death Note", "Fullmetal Alchemist", "Bleach",
@@ -114,13 +176,84 @@ cartoons = [
     "Tensai Bakabon", "Combattler V", "Casshan", "Cutie Honey",
     "Magical Princess Minky Momo", "Gekisou! Rubenkaiser", "Hana no Ko Lunlun",
     "Chainsaw Man", "Jujutsu Kaisen", "Blue Lock", "Oshi no Ko",
-    "Frieren: Beyond Journey’s End", "Spy x Family", "The Dangers in My Heart",
+    "Frieren: Beyond Journey's End", "Spy x Family", "The Dangers in My Heart",
     "Dr. Stone", "Vinland Saga", "Summertime Rendering", "Horimiya",
     "SK8 the Infinity", "Ranking of Kings", "To Your Eternity",
     "Mushoku Tensei: Jobless Reincarnation", "Re:Zero − Starting Life in Another World",
     "Erased (Boku dake ga Inai Machi)", "Kaguya-sama: Love is War",
     "Made in Abyss", "86 (Eighty-Six)"
 ]
+
+# --- Enhanced Prompt Generation Functions ---
+
+def generate_enhanced_prompt(base_subject, art_style, prompt_type="stability"):
+    """
+    Generate enhanced prompts with better structure and components.
+    
+    Args:
+        base_subject: The main subject (cartoon, topic, etc.)
+        art_style: The art style/pattern
+        prompt_type: "stability", "dalle", or "imagen"
+    
+    Returns:
+        tuple: (enhanced_prompt, negative_prompt)
+    """
+    # Core components
+    lighting = random.choice(lighting_styles)
+    composition = random.choice(composition_styles)
+    mood = random.choice(mood_atmospheres)
+    quality = random.choice(quality_enhancers)
+    
+    # Build the enhanced prompt based on type
+    if prompt_type == "stability":
+        # Stability AI works well with detailed, structured prompts
+        enhanced_prompt = f"{base_subject}, {art_style}, {lighting}, {composition}, {mood}, {quality}"
+    elif prompt_type == "dalle":
+        # DALL-E 3 prefers more natural language
+        enhanced_prompt = f"A {mood} {art_style} of {base_subject} with {lighting} and {composition}, {quality}"
+    elif prompt_type == "imagen":
+        # Imagen works well with clear, descriptive prompts
+        enhanced_prompt = f"{base_subject} in {art_style} style, featuring {lighting} and {composition}, {mood} atmosphere, {quality}"
+    else:
+        enhanced_prompt = f"{base_subject}, {art_style}"
+    
+    # Generate negative prompt
+    negative_prompt = ", ".join(random.sample(negative_prompts, min(10, len(negative_prompts))))
+    
+    return enhanced_prompt, negative_prompt
+
+def generate_contextual_prompt(topic, place, art_style):
+    """
+    Generate a contextual prompt based on topic and place.
+    """
+    context_templates = [
+        f"A {topic} from {place} in {art_style} style",
+        f"{art_style} representation of {topic} in {place}",
+        f"{topic} as depicted in {place} using {art_style}",
+        f"An artistic {art_style} interpretation of {topic} from {place}",
+        f"{place}'s {topic} portrayed in {art_style}"
+    ]
+    
+    return random.choice(context_templates)
+
+def generate_character_prompt(cartoon, art_style):
+    """
+    Generate character-focused prompts for anime/cartoon characters.
+    """
+    character_poses = [
+        "portrait", "full body shot", "action pose", "casual pose", "heroic pose",
+        "close-up", "medium shot", "wide shot", "dynamic pose", "relaxed pose"
+    ]
+    
+    character_expressions = [
+        "determined expression", "smiling", "serious", "confident", "mysterious",
+        "friendly", "focused", "energetic", "calm", "excited"
+    ]
+    
+    pose = random.choice(character_poses)
+    expression = random.choice(character_expressions)
+    
+    return f"{cartoon} character, {pose}, {expression}, {art_style} style"
 
 # --- Flask Endpoints ---
 
@@ -135,16 +268,17 @@ def stability_post_insta():
     picked_cartoon = random.choice(cartoons)
     picked_pattern = random.choice(pattern)
 
-    # for generating image prompt
-    my_prompt = f"{picked_cartoon}, {picked_pattern}"
-    print(my_prompt)
+    # Generate enhanced prompt for Stability AI
+    my_prompt, negative_prompt = generate_enhanced_prompt(picked_cartoon, picked_pattern, "stability")
+    print(f"Enhanced prompt: {my_prompt}")
+    print(f"Negative prompt: {negative_prompt}")
 
     # generate image by stability
     stability_api = client.StabilityInference(
         key=STABILITY_KEY, 
         verbose=True,
         engine="stable-diffusion-xl-1024-v1-0",)
-    answers = stability_api.generate(prompt=my_prompt)
+    answers = stability_api.generate(prompt=my_prompt, negative_prompt=negative_prompt)
 
     current_time = int(time.time())
     current_time_string = str(current_time)
@@ -198,10 +332,10 @@ def openai_post_insta():
     result = openai.chat.completions.create(model=OPENAI_MODEL, messages=input)
     ai_response = result.choices[0].message.content
     
-    # for genarating images prompt
+    # Generate enhanced prompt for DALL-E 3
     picked_pattern = random.choice(pattern)
-    my_prompt = f"{ai_response}, {picked_pattern}"
-    print(my_prompt)
+    my_prompt, _ = generate_enhanced_prompt(ai_response, picked_pattern, "dalle")
+    print(f"Enhanced DALL-E prompt: {my_prompt}")
 
     # generate image by openai
     response = openai.images.generate(
@@ -252,9 +386,9 @@ def imagen_post_insta():
     picked_cartoon = random.choice(cartoons)
     picked_pattern = random.choice(pattern)
 
-    # for generating image prompt
-    my_prompt = f"{picked_cartoon}, {picked_pattern}"
-    print(my_prompt)
+    # Generate enhanced prompt for Imagen
+    my_prompt, _ = generate_enhanced_prompt(picked_cartoon, picked_pattern, "imagen")
+    print(f"Enhanced Imagen prompt: {my_prompt}")
 
     # Generate image using Imagen (Google)
     client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
@@ -301,6 +435,80 @@ def imagen_post_insta():
     remove_img_file(image_path)
 
     return "ok", 200
+
+@app.route('/test_prompt_strategies', methods=['GET'])
+def test_prompt_strategies():
+    """
+    Test different prompt strategies and compare results.
+    Useful for A/B testing and prompt optimization.
+    """
+    picked_cartoon = random.choice(cartoons)
+    picked_pattern = random.choice(pattern)
+    
+    strategies = {
+        'simple': f"{picked_cartoon}, {picked_pattern}",
+        'enhanced': generate_enhanced_prompt(picked_cartoon, picked_pattern, "stability")[0],
+        'character_focused': generate_character_prompt(picked_cartoon, picked_pattern),
+        'complex': f"{picked_cartoon} character, {picked_pattern}, dramatic lighting, close-up shot, mysterious, highly detailed, 8k resolution"
+    }
+    
+    results = {}
+    for strategy_name, prompt in strategies.items():
+        print(f"\n--- Testing {strategy_name} strategy ---")
+        print(f"Prompt: {prompt}")
+        
+        try:
+            # Generate image with Stability AI
+            stability_api = client.StabilityInference(
+                key=STABILITY_KEY, 
+                verbose=True,
+                engine="stable-diffusion-xl-1024-v1-0",)
+            
+            if strategy_name == 'enhanced':
+                _, negative_prompt = generate_enhanced_prompt(picked_cartoon, picked_pattern, "stability")
+                answers = stability_api.generate(prompt=prompt, negative_prompt=negative_prompt)
+            else:
+                answers = stability_api.generate(prompt=prompt)
+            
+            # Save test image
+            current_time = int(time.time())
+            image_path = f"/tmp/test_{strategy_name}_{current_time}.png"
+            
+            for resp in answers:
+                for artifact in resp.artifacts:
+                    if artifact.finish_reason == generation.FILTER:
+                        results[strategy_name] = {"status": "NSFW", "error": "Content filtered"}
+                        break
+                    if artifact.type == generation.ARTIFACT_IMAGE:
+                        img = Image.open(io.BytesIO(artifact.binary))
+                        img.save(image_path)
+                        results[strategy_name] = {"status": "success", "image_path": image_path}
+                        break
+            
+        except Exception as e:
+            results[strategy_name] = {"status": "error", "error": str(e)}
+    
+    return {"strategies": strategies, "results": results}, 200
+
+@app.route('/prompt_performance', methods=['GET'])
+def get_prompt_performance():
+    """
+    Get current prompt performance statistics.
+    """
+    return {"performance": prompt_performance}, 200
+
+@app.route('/reset_prompt_performance', methods=['POST'])
+def reset_prompt_performance():
+    """
+    Reset prompt performance tracking.
+    """
+    global prompt_performance
+    prompt_performance = {
+        'stability': {'enhanced': 0, 'simple': 0},
+        'dalle': {'enhanced': 0, 'simple': 0},
+        'imagen': {'enhanced': 0, 'simple': 0}
+    }
+    return {"message": "Performance tracking reset"}, 200
 
 # --- Utility Functions ---
 
