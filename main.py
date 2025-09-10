@@ -278,7 +278,12 @@ def stability_post_insta():
         key=STABILITY_KEY, 
         verbose=True,
         engine="stable-diffusion-xl-1024-v1-0",)
-    answers = stability_api.generate(prompt=my_prompt, negative_prompt=negative_prompt)
+    answers = stability_api.generate(
+        prompt=[
+            generation.Prompt(text=my_prompt, parameters=generation.PromptParameters(weight=1.0)),
+            generation.Prompt(text=negative_prompt, parameters=generation.PromptParameters(weight=-1.0))
+        ]
+    )
 
     current_time = int(time.time())
     current_time_string = str(current_time)
@@ -466,7 +471,12 @@ def test_prompt_strategies():
             
             if strategy_name == 'enhanced':
                 _, negative_prompt = generate_enhanced_prompt(picked_cartoon, picked_pattern, "stability")
-                answers = stability_api.generate(prompt=prompt, negative_prompt=negative_prompt)
+                answers = stability_api.generate(
+                    prompt=[
+                        generation.Prompt(text=prompt, parameters=generation.PromptParameters(weight=1.0)),
+                        generation.Prompt(text=negative_prompt, parameters=generation.PromptParameters(weight=-1.0))
+                    ]
+                )
             else:
                 answers = stability_api.generate(prompt=prompt)
             
