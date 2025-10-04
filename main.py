@@ -264,9 +264,11 @@ def stability_post_insta():
     upload it to Google Cloud Storage, generate a caption using Gemini vision model,
     and post to Instagram and Threads.
     """
+    print("--- Starting Stability AI Post to Instagram ---")
     # Pick a random cartoon and art pattern for the image generation
     picked_cartoon = random.choice(cartoons)
     picked_pattern = random.choice(pattern)
+    print(f"Picked cartoon: {picked_cartoon}, Picked pattern: {picked_pattern}")
 
     # Generate enhanced prompt for Stability AI
     my_prompt, negative_prompt = generate_enhanced_prompt(picked_cartoon, picked_pattern, "stability")
@@ -274,6 +276,7 @@ def stability_post_insta():
     print(f"Negative prompt: {negative_prompt}")
 
     # generate image by stability
+    print("Generating image with Stability AI...")
     stability_api = client.StabilityInference(
         key=STABILITY_KEY, 
         verbose=True,
@@ -284,6 +287,7 @@ def stability_post_insta():
             generation.Prompt(text=negative_prompt, parameters=generation.PromptParameters(weight=-1.0))
         ]
     )
+    print("Image generation complete.")
 
     current_time = int(time.time())
     current_time_string = str(current_time)
@@ -293,26 +297,33 @@ def stability_post_insta():
     for resp in answers:
         for artifact in resp.artifacts:
             if artifact.finish_reason == generation.FILTER:
-                print("NSFW")
+                print("NSFW content detected by Stability AI.")
             if artifact.type == generation.ARTIFACT_IMAGE:
                 img = Image.open(io.BytesIO(artifact.binary))
                 img.save(image_path)
+                print(f"Image saved to {image_path}")
 
     # Uploads a file to the Google Cloud Storage bucket
+    print("Uploading image to Google Cloud Storage...")
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
-    print(image_url)
+    print(f"Image uploaded to GCS: {image_url}")
 
     # Generate caption using vision model
+    print("Generating caption with Gemini...")
     ai_response = gemini_chat_with_image(image_path, get_chat_with_image_template(my_prompt))
-    print(ai_response)
+    print(f"Generated caption: {ai_response}")
 
     caption = f"{ai_response} #api #stabilityai #stablediffusion #texttoimage"
 
+    print("Posting to Instagram...")
     exec_instagram_post(image_url, caption)
+    print("Posting to Threads...")
     exec_threads_post(image_url, caption)
 
+    print("Removing temporary image file...")
     remove_img_file(image_path)
 
+    print("--- Finished Stability AI Post to Instagram ---")
     return "ok", 200
 
 @app.route('/openai_post_insta', methods=['GET'])
@@ -322,9 +333,11 @@ def openai_post_insta():
     generate an image with DALL-E, upload to Google Cloud Storage,
     generate a caption with Gemini, and post to Instagram and Threads.
     """
+    print("--- Starting OpenAI Post to Instagram ---")
     # pick topic randomly
     picked_topic = random.choice(topic)
     picked_place = random.choice(place)
+    print(f"Picked topic: {picked_topic}, Picked place: {picked_place}")
 
     # make openai parameter
     input = []
@@ -333,9 +346,10 @@ def openai_post_insta():
     input.append(new_message)
 
     # generate text by openai
-    print(f"OpenAI input: {input}")
+    print(f"Generating text with OpenAI: {input}")
     result = openai.chat.completions.create(model=OPENAI_MODEL, messages=input)
     ai_response = result.choices[0].message.content
+    print(f"Generated text: {ai_response}")
     
     # Generate enhanced prompt for DALL-E 3
     picked_pattern = random.choice(pattern)
@@ -343,18 +357,23 @@ def openai_post_insta():
     print(f"Enhanced DALL-E prompt: {my_prompt}")
 
     # generate image by openai
+    print("Generating image with DALL-E...")
     response = openai.images.generate(
         model="dall-e-3",
         prompt=my_prompt,
         n=1,
         size="1024x1024",
     )
-
-    print(response)
+    print(f"DALL-E response: {response}")
 
     url = response.data[0].url
 
+    print("--- REQUEST ---")
+    print(f"  Method: GET")
+    print(f"  URL: {url}")
     response = requests.get(url)
+    print("--- RESPONSE ---")
+    print(f"  Status Code: {response.status_code}")
 
     current_time = int(time.time())
     current_time_string = str(current_time)
@@ -363,22 +382,29 @@ def openai_post_insta():
     image_path = f"/tmp/image_{BUSINESS_ACCOUNT_ID}_{current_time_string}.png"
     with open(image_path, 'wb') as file:
         file.write(response.content)
+    print(f"Image saved to {image_path}")
 
     # Uploads a file to the Google Cloud Storage bucket
+    print("Uploading image to Google Cloud Storage...")
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
-    print(image_url)
+    print(f"Image uploaded to GCS: {image_url}")
 
     # Generate caption using vision model
+    print("Generating caption with Gemini...")
     ai_response = gemini_chat_with_image(image_path, get_chat_with_image_template(my_prompt))
-    print(ai_response)
+    print(f"Generated caption: {ai_response}")
 
     caption = f"{ai_response} #chatgpt #openai #api #dalle3 #texttoimage"
     
+    print("Posting to Instagram...")
     exec_instagram_post(image_url, caption)
+    print("Posting to Threads...")
     exec_threads_post(image_url, caption)
 
+    print("Removing temporary image file...")
     remove_img_file(image_path)
 
+    print("--- Finished OpenAI Post to Instagram ---")
     return "ok", 200
 
 @app.route('/imagen_post_insta', methods=['GET'])
@@ -387,15 +413,18 @@ def imagen_post_insta():
     Generate an image using Google Imagen, upload to Google Cloud Storage,
     generate a caption with Gemini, and post to Instagram and Threads.
     """
+    print("--- Starting Imagen Post to Instagram ---")
     # pick cartoon and pattern
     picked_cartoon = random.choice(cartoons)
     picked_pattern = random.choice(pattern)
+    print(f"Picked cartoon: {picked_cartoon}, Picked pattern: {picked_pattern}")
 
     # Generate enhanced prompt for Imagen
     my_prompt, _ = generate_enhanced_prompt(picked_cartoon, picked_pattern, "imagen")
     print(f"Enhanced Imagen prompt: {my_prompt}")
 
     # Generate image using Imagen (Google)
+    print("Generating image with Imagen...")
     client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
     result = client.models.generate_images(
         model="models/imagen-3.0-generate-002",
@@ -407,9 +436,10 @@ def imagen_post_insta():
             aspect_ratio="1:1",
         ),
     )
+    print("Image generation complete.")
 
     if not result.generated_images:
-        print("No images generated.")
+        print("No images generated by Imagen.")
         return "No image generated", 500
 
     image_data = result.generated_images[0].image.image_bytes
@@ -421,24 +451,31 @@ def imagen_post_insta():
     # Save image as file
     image_path = f"/tmp/image_{BUSINESS_ACCOUNT_ID}_{current_time_string}.jpg"
     img.save(image_path)
+    print(f"Image saved to {image_path}")
 
     # Upload image to Google Cloud Storage
+    print("Uploading image to Google Cloud Storage...")
     image_url = upload_to_bucket(current_time_string, image_path, "ai-bot-app-insta")
-    print(image_url)
+    print(f"Image uploaded to GCS: {image_url}")
 
     # Generate caption using vision model
+    print("Generating caption with Gemini...")
     ai_response = gemini_chat_with_image(image_path, get_chat_with_image_template(my_prompt))
-    print(ai_response)
+    print(f"Generated caption: {ai_response}")
 
     caption = f"{ai_response} #api #google #imagen #texttoimage"
 
     # Post to Instagram and Threads
+    print("Posting to Instagram...")
     exec_instagram_post(image_url, caption)
+    print("Posting to Threads...")
     exec_threads_post(image_url, caption)
 
     # Clean up temporary image file
+    print("Removing temporary image file...")
     remove_img_file(image_path)
 
+    print("--- Finished Imagen Post to Instagram ---")
     return "ok", 200
 
 @app.route('/test_prompt_strategies', methods=['GET'])
@@ -447,6 +484,7 @@ def test_prompt_strategies():
     Test different prompt strategies and compare results.
     Useful for A/B testing and prompt optimization.
     """
+    print("--- Testing Prompt Strategies ---")
     picked_cartoon = random.choice(cartoons)
     picked_pattern = random.choice(pattern)
     
@@ -493,11 +531,14 @@ def test_prompt_strategies():
                         img = Image.open(io.BytesIO(artifact.binary))
                         img.save(image_path)
                         results[strategy_name] = {"status": "success", "image_path": image_path}
+                        print(f"Saved test image to {image_path}")
                         break
             
         except Exception as e:
+            print(f"Error testing {strategy_name}: {e}")
             results[strategy_name] = {"status": "error", "error": str(e)}
     
+    print("--- Finished Testing Prompt Strategies ---")
     return {"strategies": strategies, "results": results}, 200
 
 @app.route('/prompt_performance', methods=['GET'])
@@ -546,6 +587,7 @@ def exec_openai_vision(image_url, my_prompt):
     """
     Use OpenAI's vision model to generate a description for an image.
     """
+    print(f"Generating OpenAI vision description for image: {image_url}")
     response = openai.chat.completions.create(
         model=OPENAI_MODEL,
         messages=[
@@ -569,13 +611,14 @@ def exec_openai_vision(image_url, my_prompt):
     )
 
     ai_response = response.choices[0].message.content
-    print(ai_response)
+    print(f"OpenAI vision response: {ai_response}")
     return ai_response
 
 def gemini_chat_with_image(image_path, prompt_text):
     """
     Use Gemini API to generate a caption for an image given a prompt.
     """
+    print(f"Generating Gemini caption for image: {image_path}")
     try:
         with open(image_path, "rb") as img_file:
             image_bytes = img_file.read()
@@ -602,44 +645,155 @@ def gemini_chat_with_image(image_path, prompt_text):
             config=generate_content_config,
         ):
             response += chunk.text or ""
+        print(f"Gemini response: {response}")
         return response
 
     except Exception as e:
         print(f"Error during image + text Gemini request: {e}")
         return f"Error: {e}"
 
+def wait_for_media_ready(media_id, access_token, timeout=120, poll_interval=2):
+    """Waits for a media container to be ready for publishing."""
+    print(f"Waiting for media container {media_id} to be ready...")
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        status_url = f"https://graph.instagram.com/v22.0/{media_id}?fields=status_code&access_token={access_token}"
+        print("--- REQUEST ---")
+        print(f"  Method: GET")
+        print(f"  URL: {status_url}")
+        response = requests.get(status_url)
+        print("--- RESPONSE ---")
+        print(f"  Status Code: {response.status_code}")
+        print(f"  Text: {response.text}")
+        if response.status_code != 200:
+            print(f"Warning: Received status {response.status_code} when checking media status.")
+            time.sleep(poll_interval)
+            continue
+
+        status_data = response.json()
+        status = status_data.get("status_code")
+        print(f"Current media status: {status}")
+
+        if status == "FINISHED":
+            print("Media is ready for publishing.")
+            return True
+        elif status == "ERROR" or status == "EXPIRED":
+            raise Exception(f"Media container failed with status: {status}. Full response: {status_data}")
+
+        time.sleep(poll_interval)
+
+    raise Exception(f"Media container not ready after {timeout} seconds.")
+
+
+def wait_for_threads_media_ready(media_id, access_token, timeout=120, poll_interval=2):
+    """Waits for a Threads media container to be ready for publishing."""
+    print(f"Waiting for Threads media container {media_id} to be ready...")
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        status_url = f"https://graph.threads.net/v1.0/{media_id}?fields=status&access_token={access_token}"
+        print("--- REQUEST ---")
+        print(f"  Method: GET")
+        print(f"  URL: {status_url}")
+        response = requests.get(status_url)
+        print("--- RESPONSE ---")
+        print(f"  Status Code: {response.status_code}")
+        print(f"  Text: {response.text}")
+        if response.status_code != 200:
+            print(f"Warning: Received status {response.status_code} when checking Threads media status.")
+            time.sleep(poll_interval)
+            continue
+
+        status_data = response.json()
+        status = status_data.get("status")
+        print(f"Current Threads media status: {status}")
+
+        if status == "FINISHED":
+            print("Threads media is ready for publishing.")
+            return True
+        elif status == "ERROR":
+            raise Exception(f"Threads media container failed with status: {status}. Full response: {status_data}")
+
+        time.sleep(poll_interval)
+
+    raise Exception(f"Threads media container not ready after {timeout} seconds.")
+
+
 def exec_instagram_post(image_url, caption):
     """
     Post an image and caption to Instagram (feed and story).
     """
+    print("Executing Instagram post...")
     # Upload the image to Facebook
     url = f"https://graph.instagram.com/v22.0/{BUSINESS_ACCOUNT_ID}/media"
     params = {'access_token': PAGE_ACCESS_TOKEN, 'image_url':image_url, 'caption':caption}
+    print("--- REQUEST ---")
+    print(f"  Method: POST")
+    print(f"  URL: {url}")
+    print(f"  Params: {params}")
     response = requests.post(url, params=params)
+    print("--- RESPONSE ---")
+    print(f"  Status Code: {response.status_code}")
+    print(f"  Text: {response.text}")
     if response.status_code != 200:
+        print(f"Failed to upload image for post: {response.text}")
         raise Exception(f"Failed to upload image: {response.text}")
     media_id = response.json()['id']
+    print(f"Created media container for post with ID: {media_id}")
+
+    # Wait for the media container to be ready
+    wait_for_media_ready(media_id, PAGE_ACCESS_TOKEN)
 
     # Publish the photo to Instagram
+    print(f"Publishing post with creation ID: {media_id}")
     url = f"https://graph.instagram.com/v22.0/{BUSINESS_ACCOUNT_ID}/media_publish"
     params = {'access_token': PAGE_ACCESS_TOKEN, 'creation_id': media_id}
+    print("--- REQUEST ---")
+    print(f"  Method: POST")
+    print(f"  URL: {url}")
+    print(f"  Params: {params}")
     response = requests.post(url, params=params)
+    print("--- RESPONSE ---")
+    print(f"  Status Code: {response.status_code}")
+    print(f"  Text: {response.text}")
     if response.status_code != 200:
+        print(f"Failed to publish photo for post: {response.text}")
         raise Exception(f"Failed to publish photo: {response.text}")
 
     # Upload the image to Facebook as story
+    print("Uploading image for story...")
     url = f"https://graph.instagram.com/v22.0/{BUSINESS_ACCOUNT_ID}/media"
     params = {'access_token': PAGE_ACCESS_TOKEN, 'image_url':image_url, 'media_type':'STORIES'}
+    print("--- REQUEST ---")
+    print(f"  Method: POST")
+    print(f"  URL: {url}")
+    print(f"  Params: {params}")
     response = requests.post(url, params=params)
+    print("--- RESPONSE ---")
+    print(f"  Status Code: {response.status_code}")
+    print(f"  Text: {response.text}")
     if response.status_code != 200:
+        print(f"Failed to upload image for story: {response.text}")
         raise Exception(f"Failed to upload image: {response.text}")
     media_id = response.json()['id']
+    print(f"Created media container for story with ID: {media_id}")
+
+    # Wait for the media container to be ready
+    wait_for_media_ready(media_id, PAGE_ACCESS_TOKEN)
 
     # Publish the photo to Instagram as story
+    print(f"Publishing story with creation ID: {media_id}")
     url = f"https://graph.instagram.com/v22.0/{BUSINESS_ACCOUNT_ID}/media_publish"
     params = {'access_token': PAGE_ACCESS_TOKEN, 'creation_id': media_id}
+    print("--- REQUEST ---")
+    print(f"  Method: POST")
+    print(f"  URL: {url}")
+    print(f"  Params: {params}")
     response = requests.post(url, params=params)
+    print("--- RESPONSE ---")
+    print(f"  Status Code: {response.status_code}")
+    print(f"  Text: {response.text}")
     if response.status_code != 200:
+        print(f"Failed to publish photo for story: {response.text}")
         raise Exception(f"Failed to publish photo: {response.text}")
     
     print('instagram Image uploaded and published successfully!')
@@ -647,27 +801,66 @@ def exec_instagram_post(image_url, caption):
 def exec_threads_post(image_url, text = ''):
     """
     Post an image and text to Threads.
+    The text is posted as a reply to the image, as a workaround for an API bug.
     """
+    print("Executing Threads post...")
     # Truncate text to 500 characters as required by Threads API
     if len(text) > 500:
         text = text[:500]
+        print("Text truncated to 500 characters for Threads API.")
 
-    # Upload the image to Facebook
-    url = f"https://graph.threads.net/v1.0/{THREADS_USER_ID}/threads"
-    params = {'access_token': THREADS_API_TOKEN, 'media_type':'IMAGE', 'image_url':image_url, 'text':text}
-    response = requests.post(url, params=params)
-    if response.status_code != 200:
-        raise Exception(f"Failed to upload image: {response.text}")
-    media_id = response.json()['id']
-
-    # Publish the photo to Instagram
-    url = f"https://graph.threads.net/v1.0/{THREADS_USER_ID}/threads_publish"
-    params = {'access_token': THREADS_API_TOKEN, 'creation_id': media_id}
-    response = requests.post(url, params=params)
-    if response.status_code != 200:
-        raise Exception(f"Failed to publish photo: {response.text}")
+    # --- Step 1: Create and publish the image post ---
     
-    print('threads Image uploaded and published successfully!')
+    # Create the media container for the image (without text)
+    print("--- REQUEST (Image Container) ---")
+    url = f"https://graph.threads.net/v1.0/{THREADS_USER_ID}/threads"
+    params = {'access_token': THREADS_API_TOKEN, 'media_type':'IMAGE', 'image_url':image_url}
+    print(f"  Method: POST, URL: {url}, Params: {params}")
+    response = requests.post(url, params=params)
+    print(f"--- RESPONSE ---\n  Status: {response.status_code}\n  Text: {response.text}")
+    if response.status_code != 200:
+        raise Exception(f"Failed to create image container on Threads: {response.text}")
+    
+    image_container_id = response.json()['id']
+    print(f"Created image container with ID: {image_container_id}")
+
+    # Wait for the image container to be ready
+    if not wait_for_threads_media_ready(image_container_id, THREADS_API_TOKEN):
+        raise Exception("Image container was not ready in time.")
+
+    # Publish the image container
+    print("--- REQUEST (Publish Image) ---")
+    url = f"https://graph.threads.net/v1.0/{THREADS_USER_ID}/threads_publish"
+    params = {'access_token': THREADS_API_TOKEN, 'creation_id': image_container_id}
+    print(f"  Method: POST, URL: {url}, Params: {params}")
+    response = requests.post(url, params=params)
+    print(f"--- RESPONSE ---\n  Status: {response.status_code}\n  Text: {response.text}")
+    if response.status_code != 200:
+        raise Exception(f"Failed to publish image post to Threads: {response.text}")
+        
+    image_post_id = response.json()['id']
+    print(f"Published image post with ID: {image_post_id}")
+
+    # --- Step 2: Post the text as a reply ---
+    
+    if text:
+        print("--- REQUEST (Text Reply) ---")
+        url = f"https://graph.threads.net/v1.0/{THREADS_USER_ID}/threads"
+        params = {
+            'access_token': THREADS_API_TOKEN,
+            'media_type': 'TEXT',
+            'text': text,
+            'reply_to_id': image_post_id
+        }
+        print(f"  Method: POST, URL: {url}, Params: {params}")
+        response = requests.post(url, params=params)
+        print(f"--- RESPONSE ---\n  Status: {response.status_code}\n  Text: {response.text}")
+        if response.status_code != 200:
+            # Don't raise an exception here, as the main image post was successful.
+            # Just log the error.
+            print(f"Failed to post text as a reply to Threads: {response.text}")
+
+    print('Threads content posted successfully (image as main post, text as reply).')
 
 def remove_img_file(image_path):
     """

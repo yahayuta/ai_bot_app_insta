@@ -20,6 +20,16 @@ A sophisticated Python-based Instagram bot that leverages multiple AI providers 
 - **50+ Negative Prompts**: Comprehensive list to avoid common generation issues
 - **AI-Specific Optimization**: Tailored prompts for each AI provider
 
+## Known Issues & Workarounds
+
+### Threads API Posting
+
+- **Issue**: The Threads API currently has a bug that causes a `500` server error when attempting to post an image with a caption in a single request.
+- **Workaround**: The application has been updated to work around this bug by posting the content in two steps:
+    1.  The image is published to Threads.
+    2.  The text caption is published as a reply to the image post.
+- **Result**: This ensures that both the image and text are posted successfully, appearing as a thread.
+
 ## 🛠️ Requirements
 
 - Python 3.8+
