@@ -800,8 +800,7 @@ def exec_instagram_post(image_url, caption):
 
 def exec_threads_post(image_url, text = ''):
     """
-    Post an image and text to Threads.
-    The text is posted as a reply to the image, as a workaround for an API bug.
+    Post an image and optional text to Threads in a single post.
     """
     print("Executing Threads post...")
     # Truncate text to 500 characters as required by Threads API
@@ -809,58 +808,46 @@ def exec_threads_post(image_url, text = ''):
         text = text[:500]
         print("Text truncated to 500 characters for Threads API.")
 
-    # --- Step 1: Create and publish the image post ---
-    
-    # Create the media container for the image (without text)
-    print("--- REQUEST (Image Container) ---")
+    # --- Step 1: Create media container for image and text ---
+    print("--- REQUEST (Media Container) ---")
     url = f"https://graph.threads.net/v1.0/{THREADS_USER_ID}/threads"
-    params = {'access_token': THREADS_API_TOKEN, 'media_type':'IMAGE', 'image_url':image_url}
-    print(f"  Method: POST, URL: {url}, Params: {params}")
-    response = requests.post(url, params=params)
-    print(f"--- RESPONSE ---\n  Status: {response.status_code}\n  Text: {response.text}")
-    if response.status_code != 200:
-        raise Exception(f"Failed to create image container on Threads: {response.text}")
     
-    image_container_id = response.json()['id']
-    print(f"Created image container with ID: {image_container_id}")
-
-    # Wait for the image container to be ready
-    if not wait_for_threads_media_ready(image_container_id, THREADS_API_TOKEN):
-        raise Exception("Image container was not ready in time.")
-
-    # Publish the image container
-    print("--- REQUEST (Publish Image) ---")
-    url = f"https://graph.threads.net/v1.0/{THREADS_USER_ID}/threads_publish"
-    params = {'access_token': THREADS_API_TOKEN, 'creation_id': image_container_id}
-    print(f"  Method: POST, URL: {url}, Params: {params}")
-    response = requests.post(url, params=params)
-    print(f"--- RESPONSE ---\n  Status: {response.status_code}\n  Text: {response.text}")
-    if response.status_code != 200:
-        raise Exception(f"Failed to publish image post to Threads: {response.text}")
-        
-    image_post_id = response.json()['id']
-    print(f"Published image post with ID: {image_post_id}")
-
-    # --- Step 2: Post the text as a reply ---
-    
+    params = {
+        'access_token': THREADS_API_TOKEN,
+        'media_type': 'IMAGE',
+        'image_url': image_url
+    }
     if text:
-        print("--- REQUEST (Text Reply) ---")
-        url = f"https://graph.threads.net/v1.0/{THREADS_USER_ID}/threads"
-        params = {
-            'access_token': THREADS_API_TOKEN,
-            'media_type': 'TEXT',
-            'text': text,
-            'reply_to_id': image_post_id
-        }
-        print(f"  Method: POST, URL: {url}, Params: {params}")
-        response = requests.post(url, params=params)
-        print(f"--- RESPONSE ---\n  Status: {response.status_code}\n  Text: {response.text}")
-        if response.status_code != 200:
-            # Don't raise an exception here, as the main image post was successful.
-            # Just log the error.
-            print(f"Failed to post text as a reply to Threads: {response.text}")
+        params['text'] = text
 
-    print('Threads content posted successfully (image as main post, text as reply).')
+    print(f"  Method: POST, URL: {url}, Params: {params}")
+    response = requests.post(url, params=params)
+    print(f"--- RESPONSE ---\n  Status: {response.status_code}\n  Text: {response.text}")
+    
+    if response.status_code != 200:
+        raise Exception(f"Failed to create media container on Threads: {response.text}")
+    
+    container_id = response.json()['id']
+    print(f"Created media container with ID: {container_id}")
+
+    # --- Step 2: Wait for media container to be ready ---
+    if not wait_for_threads_media_ready(container_id, THREADS_API_TOKEN):
+        raise Exception("Media container was not ready in time.")
+
+    # --- Step 3: Publish the media container ---
+    print("--- REQUEST (Publish Media) ---")
+    url = f"https://graph.threads.net/v1.0/{THREADS_USER_ID}/threads_publish"
+    params = {'access_token': THREADS_API_TOKEN, 'creation_id': container_id}
+    
+    print(f"  Method: POST, URL: {url}, Params: {params}")
+    response = requests.post(url, params=params)
+    print(f"--- RESPONSE ---\n  Status: {response.status_code}\n  Text: {response.text}")
+    
+    if response.status_code != 200:
+        raise Exception(f"Failed to publish post to Threads: {response.text}")
+        
+    post_id = response.json()['id']
+    print(f"Successfully published Threads post with ID: {post_id}")
 
 def remove_img_file(image_path):
     """
