@@ -427,7 +427,7 @@ def imagen_post_insta():
     print("Generating image with Imagen...")
     client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
     result = client.models.generate_images(
-        model="models/imagen-3.0-generate-002",
+        model="models/imagen-4.0-generate-001",
         prompt=my_prompt,
         config=dict(
             number_of_images=1,
