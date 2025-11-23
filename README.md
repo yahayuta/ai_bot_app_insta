@@ -89,6 +89,17 @@ To deploy to Google Cloud Run:
 gcloud run deploy ai-bot-app-insta --source . --allow-unauthenticated --region=asia-northeast1 --project=yahayuta
 ```
 
+### Setting Environment Variables in Cloud Run
+
+After deploying the service, you need to set the environment variables in the Cloud Run console.
+
+1.  Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2.  Navigate to the Cloud Run section.
+3.  Select your service (`ai-bot-app-insta`).
+4.  Click on **"Edit & Deploy New Revision"**.
+5.  Under the **"Variables & Secrets"** tab, add the environment variables listed in the `.env` section.
+6.  Click **"Deploy"**.
+
 ## 📄 License
 
 This project is open source. Feel free to modify and adapt it for your needs.
