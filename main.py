@@ -640,7 +640,7 @@ def gemini_chat_with_image(image_path, prompt_text):
         # Generate content with image and text
         response = ""
         for chunk in genai_client.models.generate_content_stream(
-            model="gemini-2.5-flash-preview-05-20",
+            model="gemini-2.5-flash",
             contents=contents,
             config=generate_content_config,
         ):
