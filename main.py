@@ -366,14 +366,12 @@ def openai_post_insta():
     )
     print(f"OpenAI GPT Image response: {response}")
 
-    url = response.data[0].url
+    image_data_b64 = response.data[0].b64_json
+    if not image_data_b64:
+        print("Error: No base64 image data returned from OpenAI GPT Image API.")
+        return "No image generated", 500
 
-    print("--- REQUEST ---")
-    print(f"  Method: GET")
-    print(f"  URL: {url}")
-    response = requests.get(url)
-    print("--- RESPONSE ---")
-    print(f"  Status Code: {response.status_code}")
+    image_bytes = base64.b64decode(image_data_b64)
 
     current_time = int(time.time())
     current_time_string = str(current_time)
@@ -381,7 +379,7 @@ def openai_post_insta():
     # save image as file
     image_path = f"/tmp/image_{BUSINESS_ACCOUNT_ID}_{current_time_string}.png"
     with open(image_path, 'wb') as file:
-        file.write(response.content)
+        file.write(image_bytes)
     print(f"Image saved to {image_path}")
 
     # Uploads a file to the Google Cloud Storage bucket
