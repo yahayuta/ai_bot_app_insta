@@ -1,10 +1,10 @@
 # AI Social Media Bot
 
-A Python-based bot that uses Generative AI to create and post content to Instagram and Threads. It integrates with Stability AI, DALL-E 3, and Google Imagen for image generation and uses Google Gemini for intelligent caption creation.
+A Python-based bot that uses Generative AI to create and post content to Instagram and Threads. It integrates with Stability AI, DALL-E 3, and Google Gemini (Gemini 3.1 Flash Image) for image generation and uses Google Gemini for intelligent caption creation.
 
 ## 🚀 Core Features
 
-- **Multi-Provider Image Generation**: Creates images using Stability AI, DALL-E 3, and Google Imagen.
+- **Multi-Provider Image Generation**: Creates images using Stability AI, DALL-E 3, and Google Gemini (Gemini 3.1 Flash Image).
 - **Automated Posting**: Publishes generated content to Instagram (feed and stories) and Threads.
 - **Intelligent Captioning**: Leverages the Gemini vision model to generate relevant captions for your images.
 - **Advanced Prompt Engineering**: Enhances basic prompts with additional styles, lighting, and composition details to create more dynamic images.
@@ -68,7 +68,7 @@ Trigger a post using one of the following endpoints. Each endpoint generates an 
 
 - **Stability AI**: `GET /stability_post_insta`
 - **DALL-E 3**: `GET /openai_post_insta`
-- **Google Imagen**: `GET /imagen_post_insta`
+- **Google Gemini (Gemini 3.1 Flash Image)**: `GET /imagen_post_insta`
 
 **Example:**
 ```bash
