@@ -433,7 +433,6 @@ def imagen_post_insta():
             response_modalities=["IMAGE"],
             image_config=types.ImageConfig(
                 aspect_ratio="1:1",
-                person_generation="allow_adult",
             ),
         ),
     )
