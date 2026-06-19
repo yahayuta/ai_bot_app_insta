@@ -209,7 +209,7 @@ def generate_enhanced_prompt(base_subject, art_style, prompt_type="stability"):
         # Stability AI works well with detailed, structured prompts
         enhanced_prompt = f"{base_subject}, {art_style}, {lighting}, {composition}, {mood}, {quality}"
     elif prompt_type == "dalle":
-        # DALL-E 3 prefers more natural language
+        # OpenAI GPT Image prefers more natural language
         enhanced_prompt = f"A {mood} {art_style} of {base_subject} with {lighting} and {composition}, {quality}"
     elif prompt_type == "imagen":
         # Imagen works well with clear, descriptive prompts
@@ -351,20 +351,20 @@ def openai_post_insta():
     ai_response = result.choices[0].message.content
     print(f"Generated text: {ai_response}")
     
-    # Generate enhanced prompt for DALL-E 3
+    # Generate enhanced prompt for OpenAI GPT Image
     picked_pattern = random.choice(pattern)
     my_prompt, _ = generate_enhanced_prompt(ai_response, picked_pattern, "dalle")
-    print(f"Enhanced DALL-E prompt: {my_prompt}")
+    print(f"Enhanced OpenAI GPT Image prompt: {my_prompt}")
 
     # generate image by openai
-    print("Generating image with DALL-E...")
+    print("Generating image with OpenAI GPT Image...")
     response = openai.images.generate(
-        model="dall-e-3",
+        model="gpt-image-2",
         prompt=my_prompt,
         n=1,
         size="1024x1024",
     )
-    print(f"DALL-E response: {response}")
+    print(f"OpenAI GPT Image response: {response}")
 
     url = response.data[0].url
 
@@ -394,7 +394,7 @@ def openai_post_insta():
     ai_response = gemini_chat_with_image(image_path, get_chat_with_image_template(my_prompt))
     print(f"Generated caption: {ai_response}")
 
-    caption = f"{ai_response} #chatgpt #openai #api #dalle3 #texttoimage"
+    caption = f"{ai_response} #chatgpt #openai #api #gptimage2 #texttoimage"
     
     print("Posting to Instagram...")
     exec_instagram_post(image_url, caption)
