@@ -23,6 +23,8 @@ from google.cloud import storage  # For Google Cloud Storage
 from google import genai  # For Gemini API
 from google.genai import types  # type: ignore # For Gemini API types
 
+from security import require_job_token  # X-Job-Token check for every endpoint
+
 # --- Flask App Initialization ---
 app = Flask(__name__)
 
@@ -258,6 +260,7 @@ def generate_character_prompt(cartoon, art_style):
 # --- Flask Endpoints ---
 
 @app.route('/stability_post_insta', methods=['GET'])
+@require_job_token
 def stability_post_insta():
     """
     Generate an image using Stability AI based on a random cartoon and art pattern,
@@ -327,6 +330,7 @@ def stability_post_insta():
     return "ok", 200
 
 @app.route('/openai_post_insta', methods=['GET'])
+@require_job_token
 def openai_post_insta():
     """
     Generate a topic and place, use OpenAI to create a short description,
@@ -408,6 +412,7 @@ def openai_post_insta():
     return "ok", 200
 
 @app.route('/imagen_post_insta', methods=['GET'])
+@require_job_token
 def imagen_post_insta():
     """
     Generate an image using Google Imagen, upload to Google Cloud Storage,
@@ -483,6 +488,7 @@ def imagen_post_insta():
     return "ok", 200
 
 @app.route('/test_prompt_strategies', methods=['GET'])
+@require_job_token
 def test_prompt_strategies():
     """
     Test different prompt strategies and compare results.
@@ -546,6 +552,7 @@ def test_prompt_strategies():
     return {"strategies": strategies, "results": results}, 200
 
 @app.route('/prompt_performance', methods=['GET'])
+@require_job_token
 def get_prompt_performance():
     """
     Get current prompt performance statistics.
@@ -553,6 +560,7 @@ def get_prompt_performance():
     return {"performance": prompt_performance}, 200
 
 @app.route('/reset_prompt_performance', methods=['POST'])
+@require_job_token
 def reset_prompt_performance():
     """
     Reset prompt performance tracking.
@@ -870,5 +878,5 @@ def get_chat_with_image_template(prompt):
     return f"What are in this image? Describe it good for sns post. Return only text of description. The image title tells that {prompt}."
 
 if __name__ == '__main__':
-    # Run the Flask app in debug mode for local development
-    app.run(debug=True)
+    # Local run only (Cloud Run uses gunicorn). Debug mode is opt-in: FLASK_DEBUG=1
+    app.run(debug=os.environ.get("FLASK_DEBUG") == "1")
