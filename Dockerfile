@@ -28,12 +28,23 @@ WORKDIR $APP_HOME
 COPY . ./
 
 # Install production dependencies.
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install requests
-RUN pip install openai
-RUN pip install google-cloud-storage
-RUN pip install stability-sdk
-RUN pip install google-genai pillow
+# Install everything in one pip run so the resolver sees every constraint at once.
+# stability-sdk needs protobuf<6, while the newest googleapis-common-protos
+# (1.76+) needs protobuf>=6.33.5. Separate pip runs let them overwrite each other
+# and the app then fails at import time ("Worker failed to boot").
+RUN pip install --no-cache-dir -r requirements.txt \
+    requests \
+    "openai<3" \
+    "google-cloud-storage<4" \
+    "stability-sdk==0.8.6" \
+    "google-genai<2" \
+    "pillow<13" \
+    "protobuf<6" \
+    "googleapis-common-protos<1.76"
+
+# Fail the build (instead of the running service) if the app cannot be imported.
+# A failed build keeps the current revision serving traffic.
+RUN OPENAI_TOKEN=build-check python -c "import main"
 
 # Run the web service on container startup. Here we use the gunicorn
 # webserver, with one worker process and 8 threads.
