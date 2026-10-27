@@ -23,6 +23,8 @@ from google.cloud import storage  # For Google Cloud Storage
 from google import genai  # For Gemini API
 from google.genai import types  # type: ignore # For Gemini API types
 
+from security import require_job_token  # X-Job-Token check for every endpoint
+
 # --- Flask App Initialization ---
 app = Flask(__name__)
 
@@ -258,6 +260,7 @@ def generate_character_prompt(cartoon, art_style):
 # --- Flask Endpoints ---
 
 @app.route('/stability_post_insta', methods=['GET'])
+@require_job_token
 def stability_post_insta():
     """
     Generate an image using Stability AI based on a random cartoon and art pattern,
@@ -318,7 +321,7 @@ def stability_post_insta():
     print("Posting to Instagram...")
     exec_instagram_post(image_url, caption)
     print("Posting to Threads...")
-    exec_threads_post(image_url, caption)
+    post_to_threads_safely(image_url, caption)
 
     print("Removing temporary image file...")
     remove_img_file(image_path)
@@ -327,6 +330,7 @@ def stability_post_insta():
     return "ok", 200
 
 @app.route('/openai_post_insta', methods=['GET'])
+@require_job_token
 def openai_post_insta():
     """
     Generate a topic and place, use OpenAI to create a short description,
@@ -397,7 +401,7 @@ def openai_post_insta():
     print("Posting to Instagram...")
     exec_instagram_post(image_url, caption)
     print("Posting to Threads...")
-    exec_threads_post(image_url, caption)
+    post_to_threads_safely(image_url, caption)
 
     print("Removing temporary image file...")
     remove_img_file(image_path)
@@ -406,6 +410,7 @@ def openai_post_insta():
     return "ok", 200
 
 @app.route('/imagen_post_insta', methods=['GET'])
+@require_job_token
 def imagen_post_insta():
     """
     Generate an image using Google Imagen, upload to Google Cloud Storage,
@@ -471,7 +476,7 @@ def imagen_post_insta():
     print("Posting to Instagram...")
     exec_instagram_post(image_url, caption)
     print("Posting to Threads...")
-    exec_threads_post(image_url, caption)
+    post_to_threads_safely(image_url, caption)
 
     # Clean up temporary image file
     print("Removing temporary image file...")
@@ -481,6 +486,7 @@ def imagen_post_insta():
     return "ok", 200
 
 @app.route('/test_prompt_strategies', methods=['GET'])
+@require_job_token
 def test_prompt_strategies():
     """
     Test different prompt strategies and compare results.
@@ -544,6 +550,7 @@ def test_prompt_strategies():
     return {"strategies": strategies, "results": results}, 200
 
 @app.route('/prompt_performance', methods=['GET'])
+@require_job_token
 def get_prompt_performance():
     """
     Get current prompt performance statistics.
@@ -551,6 +558,7 @@ def get_prompt_performance():
     return {"performance": prompt_performance}, 200
 
 @app.route('/reset_prompt_performance', methods=['POST'])
+@require_job_token
 def reset_prompt_performance():
     """
     Reset prompt performance tracking.
@@ -654,16 +662,36 @@ def gemini_chat_with_image(image_path, prompt_text):
         print(f"Error during image + text Gemini request: {e}")
         return f"Error: {e}"
 
+def redact(params):
+    """Copy of request params with the access token masked, for logging."""
+    return {k: ("***" if k == "access_token" else v) for k, v in params.items()}
+
+
+def post_to_threads_safely(image_url, caption):
+    """Post to Threads, but never let a Threads failure fail the whole job.
+
+    Instagram has already been published at this point, so returning an error
+    would only make Cloud Scheduler report a failure (or retry and post twice).
+    """
+    try:
+        exec_threads_post(image_url, caption)
+        return True
+    except Exception as e:  # noqa: BLE001 - log and continue
+        print(f"ERROR: Threads post failed (Instagram post is already published): {e}")
+        return False
+
+
 def wait_for_media_ready(media_id, access_token, timeout=120, poll_interval=2):
     """Waits for a media container to be ready for publishing."""
     print(f"Waiting for media container {media_id} to be ready...")
     start_time = time.time()
     while time.time() - start_time < timeout:
-        status_url = f"https://graph.instagram.com/v22.0/{media_id}?fields=status_code&access_token={access_token}"
+        status_url = f"https://graph.instagram.com/v22.0/{media_id}"
+        status_params = {"fields": "status_code", "access_token": access_token}
         print("--- REQUEST ---")
         print(f"  Method: GET")
-        print(f"  URL: {status_url}")
-        response = requests.get(status_url)
+        print(f"  URL: {status_url} Params: {redact(status_params)}")
+        response = requests.get(status_url, params=status_params)
         print("--- RESPONSE ---")
         print(f"  Status Code: {response.status_code}")
         print(f"  Text: {response.text}")
@@ -692,11 +720,12 @@ def wait_for_threads_media_ready(media_id, access_token, timeout=120, poll_inter
     print(f"Waiting for Threads media container {media_id} to be ready...")
     start_time = time.time()
     while time.time() - start_time < timeout:
-        status_url = f"https://graph.threads.net/v1.0/{media_id}?fields=status&access_token={access_token}"
+        status_url = f"https://graph.threads.net/v1.0/{media_id}"
+        status_params = {"fields": "status", "access_token": access_token}
         print("--- REQUEST ---")
         print(f"  Method: GET")
-        print(f"  URL: {status_url}")
-        response = requests.get(status_url)
+        print(f"  URL: {status_url} Params: {redact(status_params)}")
+        response = requests.get(status_url, params=status_params)
         print("--- RESPONSE ---")
         print(f"  Status Code: {response.status_code}")
         print(f"  Text: {response.text}")
@@ -731,7 +760,7 @@ def exec_instagram_post(image_url, caption):
     print("--- REQUEST ---")
     print(f"  Method: POST")
     print(f"  URL: {url}")
-    print(f"  Params: {params}")
+    print(f"  Params: {redact(params)}")
     response = requests.post(url, params=params)
     print("--- RESPONSE ---")
     print(f"  Status Code: {response.status_code}")
@@ -752,7 +781,7 @@ def exec_instagram_post(image_url, caption):
     print("--- REQUEST ---")
     print(f"  Method: POST")
     print(f"  URL: {url}")
-    print(f"  Params: {params}")
+    print(f"  Params: {redact(params)}")
     response = requests.post(url, params=params)
     print("--- RESPONSE ---")
     print(f"  Status Code: {response.status_code}")
@@ -768,7 +797,7 @@ def exec_instagram_post(image_url, caption):
     print("--- REQUEST ---")
     print(f"  Method: POST")
     print(f"  URL: {url}")
-    print(f"  Params: {params}")
+    print(f"  Params: {redact(params)}")
     response = requests.post(url, params=params)
     print("--- RESPONSE ---")
     print(f"  Status Code: {response.status_code}")
@@ -789,7 +818,7 @@ def exec_instagram_post(image_url, caption):
     print("--- REQUEST ---")
     print(f"  Method: POST")
     print(f"  URL: {url}")
-    print(f"  Params: {params}")
+    print(f"  Params: {redact(params)}")
     response = requests.post(url, params=params)
     print("--- RESPONSE ---")
     print(f"  Status Code: {response.status_code}")
@@ -822,7 +851,7 @@ def exec_threads_post(image_url, text = ''):
     if text:
         params['text'] = text
 
-    print(f"  Method: POST, URL: {url}, Params: {params}")
+    print(f"  Method: POST, URL: {url}, Params: {redact(params)}")
     response = requests.post(url, params=params)
     print(f"--- RESPONSE ---\n  Status: {response.status_code}\n  Text: {response.text}")
     
@@ -841,7 +870,7 @@ def exec_threads_post(image_url, text = ''):
     url = f"https://graph.threads.net/v1.0/{THREADS_USER_ID}/threads_publish"
     params = {'access_token': THREADS_API_TOKEN, 'creation_id': container_id}
     
-    print(f"  Method: POST, URL: {url}, Params: {params}")
+    print(f"  Method: POST, URL: {url}, Params: {redact(params)}")
     response = requests.post(url, params=params)
     print(f"--- RESPONSE ---\n  Status: {response.status_code}\n  Text: {response.text}")
     
@@ -868,5 +897,5 @@ def get_chat_with_image_template(prompt):
     return f"What are in this image? Describe it good for sns post. Return only text of description. The image title tells that {prompt}."
 
 if __name__ == '__main__':
-    # Run the Flask app in debug mode for local development
-    app.run(debug=True)
+    # Local run only (Cloud Run uses gunicorn). Debug mode is opt-in: FLASK_DEBUG=1
+    app.run(debug=os.environ.get("FLASK_DEBUG") == "1")

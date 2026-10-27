@@ -42,6 +42,9 @@ THREADS_USER_ID="your_threads_user_id"
 OPENAI_TOKEN="your_openai_api_key"
 STABILITY_KEY="your_stability_ai_key"
 GEMINI_API_KEY="your_google_gemini_key"
+
+# Endpoint protection (optional): once set, callers must send X-Job-Token with this value
+JOB_TOKEN="a_long_random_string"
 ```
 
 #### **Prompt Tuning (Optional)**
@@ -70,9 +73,11 @@ Trigger a post using one of the following endpoints. Each endpoint generates an 
 - **OpenAI GPT Image (gpt-image-2)**: `GET /openai_post_insta`
 - **Google Gemini (Gemini 3.1 Flash Image)**: `GET /imagen_post_insta`
 
+When `JOB_TOKEN` is set, every endpoint requires the header `X-Job-Token: <JOB_TOKEN>` and other requests get 403. While it is not set, requests are allowed and a warning is logged.
+
 **Example:**
 ```bash
-curl http://127.0.0.1:5000/stability_post_insta
+curl -H "X-Job-Token: $JOB_TOKEN" http://127.0.0.1:5000/stability_post_insta
 ```
 
 #### **Testing & Analytics**
@@ -99,6 +104,21 @@ After deploying the service, you need to set the environment variables in the Cl
 4.  Click on **"Edit & Deploy New Revision"**.
 5.  Under the **"Variables & Secrets"** tab, add the environment variables listed in the `.env` section.
 6.  Click **"Deploy"**.
+
+### Cloud Scheduler
+
+After setting `JOB_TOKEN`, each scheduled job must send the token. In the job's settings, add the HTTP header `X-Job-Token` with the same value as `JOB_TOKEN`, or with gcloud:
+
+```sh
+gcloud scheduler jobs update http <job-name> --location=us-central1 --update-headers=X-Job-Token=<JOB_TOKEN>
+```
+
+### Tests
+
+```bash
+pip install -r requirements.txt pytest
+pytest -q
+```
 
 ## 📄 License
 
