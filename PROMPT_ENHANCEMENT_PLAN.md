@@ -7,7 +7,7 @@ This document outlines the comprehensive enhancement plan for tuning image gener
 
 ### Existing Prompt Structure
 - **Stability AI**: `"{cartoon}, {pattern}"`
-- **DALL-E 3**: `"{ai_response}, {pattern}"`
+- **OpenAI GPT Image**: `"{ai_response}, {pattern}"`
 - **Imagen**: `"{cartoon}, {pattern}"`
 
 ### Issues Identified
@@ -41,7 +41,7 @@ Enhanced: "Naruto character, watercolor style, dramatic lighting, close-up shot,
 - **Negative Prompts**: Full negative prompt support
 - **Example**: `"Naruto, watercolor, dramatic lighting, close-up shot, mysterious, highly detailed"`
 
-#### DALL-E 3
+#### OpenAI GPT Image (gpt-image-2)
 - **Structure**: Natural language sentences
 - **Style**: Conversational and descriptive
 - **Example**: `"A mysterious watercolor of Naruto with dramatic lighting and close-up shot, highly detailed"`
