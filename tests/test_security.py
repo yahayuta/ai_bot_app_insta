@@ -25,10 +25,10 @@ def test_requires_token(client, method, path):
     assert call(path, headers={"X-Job-Token": "wrong"}).status_code == 403
 
 
-@pytest.mark.parametrize("method,path", PATHS)
-def test_rejects_when_token_not_configured(client, monkeypatch, method, path):
+def test_allowed_with_warning_when_token_not_configured(client, monkeypatch, capsys):
     monkeypatch.setenv("JOB_TOKEN", "")
-    assert getattr(client, method)(path, headers={"X-Job-Token": ""}).status_code == 403
+    assert client.get("/prompt_performance").status_code == 200
+    assert "JOB_TOKEN is not set" in capsys.readouterr().out
 
 
 def test_valid_token_reaches_endpoint(client):
